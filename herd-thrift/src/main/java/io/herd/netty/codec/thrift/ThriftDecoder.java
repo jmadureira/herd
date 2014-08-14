@@ -1,5 +1,7 @@
-package io.herd.thrift;
+package io.herd.netty.codec.thrift;
 
+import io.herd.netty.codec.thrift.ThriftMessage;
+import io.herd.netty.codec.thrift.ThriftTransportType;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -9,12 +11,12 @@ import java.util.List;
 
 import javax.naming.OperationNotSupportedException;
 
-public class ThriftFrameDecoder extends ByteToMessageDecoder {
+public class ThriftDecoder extends ByteToMessageDecoder {
 
     public static final int MESSAGE_FRAME_SIZE = 4;
     private final int maxFrameSize;
 
-    public ThriftFrameDecoder(int maxFrameSize) {
+    public ThriftDecoder(int maxFrameSize) {
         this.maxFrameSize = maxFrameSize;
     }
 
@@ -34,7 +36,7 @@ public class ThriftFrameDecoder extends ByteToMessageDecoder {
             // we still do not have enough content to read the size of the framed message
             return;
         } else {
-            ByteBuf messageBuffer = decodeFramedMessage(ctx, in);
+            ThriftMessage messageBuffer = decodeFramedMessage(ctx, in);
             if (messageBuffer == null) {
                 return;
             }
@@ -42,7 +44,7 @@ public class ThriftFrameDecoder extends ByteToMessageDecoder {
         }
     }
 
-    private ByteBuf decodeFramedMessage(ChannelHandlerContext ctx, ByteBuf in) {
+    private ThriftMessage decodeFramedMessage(ChannelHandlerContext ctx, ByteBuf in) {
 
         int messageStartIndex = in.readerIndex();
         int messageContentsOffset = messageStartIndex + MESSAGE_FRAME_SIZE;
@@ -66,7 +68,7 @@ public class ThriftFrameDecoder extends ByteToMessageDecoder {
              */
             ByteBuf messageBuffer = in.copy(messageContentsOffset, messageContentsLength);
             in.readerIndex(messageStartIndex + messageLength);
-            return messageBuffer;
+            return new ThriftMessage(ThriftTransportType.FRAMED, messageBuffer);
         }
     }
 

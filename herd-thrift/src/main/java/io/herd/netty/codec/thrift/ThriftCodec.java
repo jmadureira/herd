@@ -1,11 +1,11 @@
-package io.herd.thrift;
+package io.herd.netty.codec.thrift;
 
 import io.netty.channel.CombinedChannelDuplexHandler;
 
-public class ThriftFrameCodec extends CombinedChannelDuplexHandler<ThriftFrameDecoder, ThriftFrameEncoder> {
+public class ThriftCodec extends CombinedChannelDuplexHandler<ThriftDecoder, ThriftEncoder> {
 
-    public ThriftFrameCodec(int maxFrameSize) {
-        init(new ThriftFrameDecoder(maxFrameSize), new ThriftFrameEncoder(maxFrameSize));
+    public ThriftCodec(int maxFrameSize) {
+        init(new ThriftDecoder(maxFrameSize), new ThriftEncoder(maxFrameSize));
     }
 
 }

@@ -1,5 +1,6 @@
 package io.herd.thrift;
 
+import io.herd.netty.codec.thrift.ThriftEncoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -17,7 +18,7 @@ public class ThriftFrameEncoderTest {
 
     @Before
     public void setUp() {
-        this.channel = new EmbeddedChannel(new ThriftFrameEncoder(50));
+        this.channel = new EmbeddedChannel(new ThriftEncoder(50));
     }
 
     @Test
