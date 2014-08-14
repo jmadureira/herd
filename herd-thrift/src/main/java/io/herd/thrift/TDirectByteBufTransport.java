@@ -13,23 +13,24 @@ import org.apache.thrift.transport.TTransportException;
  * @author joaomadureira
  *
  */
-public class TDirectByteBufTransport extends TTransport {
+public class TDirectByteBufTransport extends TTransport implements TByteBufTransport {
 
     private static final int DEFAULT_BUFFER_SIZE = 1024;
     private final ByteBuf inBuffer;
-    private final ByteBuf out;
+    private final ByteBuf outBuffer;
 
     public TDirectByteBufTransport(ByteBuf buf) {
+        super();
         this.inBuffer = buf;
         /*
          * TODO we might not need to instantiate a direct buffer.
          */
-        this.out = Unpooled.directBuffer(DEFAULT_BUFFER_SIZE);
+        this.outBuffer = Unpooled.directBuffer(DEFAULT_BUFFER_SIZE);
     }
 
     @Override
     public void write(byte[] array, int offset, int length) throws TTransportException {
-        out.writeBytes(array, offset, length);
+        outBuffer.writeBytes(array, offset, length);
     }
 
     @Override
@@ -53,6 +54,11 @@ public class TDirectByteBufTransport extends TTransport {
 
     @Override
     public void close() {
-        this.out.release();
+        this.outBuffer.release();
+    }
+
+    @Override
+    public ByteBuf getOutputBuffer() {
+        return outBuffer;
     }
 }
