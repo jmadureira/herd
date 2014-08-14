@@ -13,7 +13,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class ThriftFrameEncoderTest {
+public class ThriftEncoderTest {
 
     private EmbeddedChannel channel;
 
