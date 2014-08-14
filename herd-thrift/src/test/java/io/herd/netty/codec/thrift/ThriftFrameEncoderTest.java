@@ -1,6 +1,7 @@
-package io.herd.thrift;
+package io.herd.netty.codec.thrift;
 
 import io.herd.netty.codec.thrift.ThriftEncoder;
+import io.herd.thrift.TDirectByteBufTransport;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
