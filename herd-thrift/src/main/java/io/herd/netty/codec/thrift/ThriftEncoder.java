@@ -1,6 +1,5 @@
 package io.herd.netty.codec.thrift;
 
-import io.herd.thrift.TByteBufTransport;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
@@ -10,7 +9,7 @@ import io.netty.handler.codec.TooLongFrameException;
  * 
  * @author joaomadureira
  */
-public class ThriftEncoder extends MessageToByteEncoder<TByteBufTransport> {
+class ThriftEncoder extends MessageToByteEncoder<ThriftMessage> {
 
     private static final String MESSAGE_FRAME_TOO_LONG = "Frame with size %d has exceeded maximum allowed size of %d bytes.";
 
@@ -21,9 +20,9 @@ public class ThriftEncoder extends MessageToByteEncoder<TByteBufTransport> {
     }
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, TByteBufTransport msg, ByteBuf out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, ThriftMessage msg, ByteBuf out) throws Exception {
 
-        ByteBuf dataBuffer = msg.getOutputBuffer();
+        ByteBuf dataBuffer = msg.content();
         int frameSize = dataBuffer.readableBytes();
 
         if (frameSize > maxFrameSize) {

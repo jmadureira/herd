@@ -11,7 +11,7 @@ import java.util.List;
 
 import javax.naming.OperationNotSupportedException;
 
-public class ThriftDecoder extends ByteToMessageDecoder {
+class ThriftDecoder extends ByteToMessageDecoder {
 
     public static final int MESSAGE_FRAME_SIZE = 4;
     private final int maxFrameSize;

@@ -24,13 +24,14 @@ public class ThriftHandler extends SimpleChannelInboundHandler<ThriftMessage> {
 
             Factory factory = new TBinaryProtocol.Factory(true, true);
 
-            TTransport trans = TTransports.getTransport(message.content());
+            TTransport out = new ThriftMessage(message.getTransportType());
             
-            TProtocol protocol = factory.getProtocol(trans);
+            TProtocol inProtocol = factory.getProtocol(message);
+            TProtocol outProtocol = factory.getProtocol(out);
 
-            processorFactory.getProcessor(trans).process(protocol, protocol);
+            processorFactory.getProcessor(message).process(inProtocol, outProtocol);
             
-            ctx.write(trans);
+            ctx.write(out);
         } catch (Exception e) {
             e.printStackTrace();
         }

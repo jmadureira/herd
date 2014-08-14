@@ -1,7 +1,7 @@
 package io.herd.netty.codec.thrift;
 
-import io.herd.netty.codec.thrift.ThriftEncoder;
-import io.herd.thrift.TDirectByteBufTransport;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -10,8 +10,6 @@ import io.netty.util.CharsetUtil;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class ThriftEncoderTest {
 
@@ -26,7 +24,7 @@ public class ThriftEncoderTest {
     public void testFrameOverflow() throws Exception {
         ByteBuf input = Unpooled.buffer(25);
         String content = "some random content I've just added here that is too long for the frame";
-        TDirectByteBufTransport transport = new TDirectByteBufTransport(input);
+        ThriftMessage transport = new ThriftMessage(ThriftTransportType.FRAMED, input);
         transport.write(content.getBytes(), 0, content.length());
         try {
             this.channel.writeOutbound(transport);
@@ -40,7 +38,7 @@ public class ThriftEncoderTest {
     public void testFramedEncoding() throws Exception {
         ByteBuf input = Unpooled.buffer(25);
         String content = "some random content I've just added here";
-        TDirectByteBufTransport transport = new TDirectByteBufTransport(input);
+        ThriftMessage transport = new ThriftMessage(ThriftTransportType.FRAMED, input);
         transport.write(content.getBytes(), 0, content.length());
         this.channel.writeOutbound(transport);
 
