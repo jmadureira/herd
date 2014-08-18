@@ -1,5 +1,7 @@
 package io.herd.netty.codec.thrift;
 
+import org.apache.thrift.transport.TTransportException;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
@@ -29,9 +31,18 @@ class ThriftEncoder extends MessageToByteEncoder<ThriftMessage> {
             ctx.fireExceptionCaught(new TooLongFrameException(String.format(MESSAGE_FRAME_TOO_LONG, frameSize,
                     maxFrameSize)));
         } else {
+            switch (msg.getTransportType()) {
+            case FRAMED:
+                out.writeInt(frameSize);
+                out.writeBytes(dataBuffer);
+                break;
+            case UNFRAMED:
+                out.writeBytes(dataBuffer);
+                break;
             // TODO Add support for the remaining transport types
-            out.writeInt(frameSize);
-            out.writeBytes(dataBuffer);
+            default:
+                ctx.fireExceptionCaught(new TTransportException("Unsupported transport type " + msg.getTransportType()));
+            }
         }
     }
 
