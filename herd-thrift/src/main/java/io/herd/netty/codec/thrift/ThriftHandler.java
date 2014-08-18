@@ -1,4 +1,4 @@
-package io.herd.thrift;
+package io.herd.netty.codec.thrift;
 
 import io.herd.netty.codec.thrift.ThriftMessage;
 import io.netty.channel.ChannelHandlerContext;

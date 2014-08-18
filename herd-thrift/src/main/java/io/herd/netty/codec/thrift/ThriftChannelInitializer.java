@@ -26,6 +26,7 @@ public class ThriftChannelInitializer extends ChannelInitializer<SocketChannel> 
         ChannelPipeline pipeline = ch.pipeline();
 
         pipeline.addLast("thriftCodec", new ThriftCodec(MAX_FRAME_SIZE));
+        pipeline.addLast("handler", new ThriftHandler(processorFactory));
     }
 
 }
