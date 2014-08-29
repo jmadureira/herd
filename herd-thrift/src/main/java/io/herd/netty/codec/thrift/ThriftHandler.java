@@ -1,16 +1,18 @@
 package io.herd.netty.codec.thrift;
 
-import io.herd.netty.codec.thrift.ThriftMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.apache.thrift.TProcessorFactory;
-import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.protocol.TBinaryProtocol.Factory;
 import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TTransport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ThriftHandler extends SimpleChannelInboundHandler<ThriftMessage> {
+class ThriftHandler extends SimpleChannelInboundHandler<ThriftMessage> {
+    
+    private static final Logger logger = LoggerFactory.getLogger(ThriftHandler.class);
 
     private final TProcessorFactory processorFactory;
 
@@ -22,7 +24,7 @@ public class ThriftHandler extends SimpleChannelInboundHandler<ThriftMessage> {
     protected void channelRead0(ChannelHandlerContext ctx, final ThriftMessage message) throws Exception {
         try {
 
-            Factory factory = new TBinaryProtocol.Factory(true, true);
+            TProtocolFactory factory = ThriftProtocolUtil.guessProtocolFactory(message);
 
             TTransport out = new ThriftMessage(message.getTransportType());
             
@@ -33,6 +35,7 @@ public class ThriftHandler extends SimpleChannelInboundHandler<ThriftMessage> {
             
             ctx.write(out);
         } catch (Exception e) {
+            logger.error("Failed to read thrift message due to {}", e.toString());
             e.printStackTrace();
         }
     }
