@@ -8,6 +8,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.CharsetUtil;
 
+import org.apache.thrift.transport.TTransportException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,5 +46,20 @@ public class ThriftEncoderTest {
         ByteBuf object = (ByteBuf) this.channel.readOutbound();
         assertEquals(content.length(), object.readInt());
         assertEquals(content, object.toString(CharsetUtil.UTF_8));
+    }
+    
+    @Test
+    public void testUnsupportedEncoding() throws Exception {
+        ByteBuf input = Unpooled.buffer(25);
+        String content = "some random content I've just added here";
+        ThriftMessage transport = new ThriftMessage(ThriftTransportType.HTTP, input);
+        transport.write(content.getBytes(), 0, content.length());
+        try {
+            this.channel.writeOutbound(transport);
+            fail("Should have thrown a TTransportException");
+        } catch (Exception e) {
+            assertEquals(e.getClass(), TTransportException.class);
+            assertEquals("Unsupported transport type HTTP", e.getMessage());
+        }
     }
 }
