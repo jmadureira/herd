@@ -2,8 +2,13 @@ package io.herd.scheduler;
 
 import static io.herd.base.Preconditions.checkNotNull;
 import static io.herd.base.Preconditions.checkPositive;
+import io.herd.base.Reflections;
 import io.herd.concurrent.DefaultThreadFactory;
+import io.herd.monitoring.Emitter;
+import io.herd.monitoring.Event;
+import io.herd.monitoring.Timed;
 
+import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -12,43 +17,78 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class SchedulerBuilder {
 
-    private static class Task {
+    private static class RunnableTask {
         final Runnable runnable;
         final int period;
 
-        Task(int period, Runnable runnable) {
+        RunnableTask(int period, Runnable runnable) {
             this.period = period;
             this.runnable = runnable;
         }
     }
 
+    private static final Logger logger = LogManager.getLogger(SchedulerBuilder.class);
+
     public static final int DEFAULT_POOL_SIZE = 2;
 
     private int poolSize;
     private ThreadFactory threadFactory;
-    private List<Task> runnable = new LinkedList<>();
+    private List<RunnableTask> taskList = new LinkedList<>();
+    private final Emitter emitter;
 
-    public SchedulerBuilder() {
-        this(DEFAULT_POOL_SIZE, new DefaultThreadFactory());
+    public SchedulerBuilder(Emitter emitter) {
+        this(DEFAULT_POOL_SIZE, new DefaultThreadFactory(), emitter);
     }
 
-    public SchedulerBuilder(int poolSize) {
-        this(poolSize, new DefaultThreadFactory());
+    public SchedulerBuilder(int poolSize, Emitter emitter) {
+        this(poolSize, new DefaultThreadFactory(), emitter);
     }
 
-    public SchedulerBuilder(int poolSize, ThreadFactory threadFactory) {
+    public SchedulerBuilder(int poolSize, ThreadFactory threadFactory, Emitter emitter) {
         this.poolSize = poolSize;
         this.threadFactory = threadFactory;
+        this.emitter = emitter;
     }
 
     public ExecutorService build() {
         ScheduledExecutorService service = Executors.newScheduledThreadPool(poolSize, threadFactory);
-        for (Task task : runnable) {
-            service.scheduleAtFixedRate(task.runnable, 1000, task.period, TimeUnit.MILLISECONDS);
+        for (RunnableTask task : taskList) {
+            service.scheduleAtFixedRate(getTask(task.runnable), 1000, task.period, TimeUnit.MILLISECONDS);
         }
         return service;
+    }
+
+    private Runnable getTask(final Runnable runnable) {
+        if (emitter == null) {
+            // might as well return since there's no emitter to emit the events anyway
+            logger.warn("Not checking for timed task since there's no emitter registered.");
+            return runnable;
+        }
+        Method runMethod = Reflections.findMethod("run", runnable.getClass());
+        Timed timed = runMethod.getAnnotation(Timed.class);
+        if (timed == null) {
+            return runnable;
+        }
+        logger.debug("Wrapping timed task named {}", timed.name());
+        return new Runnable() {
+
+            @Override
+            public void run() {
+                long time = System.currentTimeMillis();
+                try {
+                    runnable.run();
+                    emitter.emit(new Event(timed.name(), System.currentTimeMillis() - time, false));
+                } catch (Exception e) {
+                    emitter.emit(new Event(timed.name(), System.currentTimeMillis() - time, true));
+                    throw e;
+                }
+            }
+        };
     }
 
     /**
@@ -67,7 +107,7 @@ public class SchedulerBuilder {
     public SchedulerBuilder schedule(int period, Runnable runnable) {
         checkPositive(period, "Must specify a period > 0");
         checkNotNull(runnable, "Must specify a non null runnable");
-        this.runnable.add(new Task(period, runnable));
+        this.taskList.add(new RunnableTask(period, runnable));
         return this;
     }
 

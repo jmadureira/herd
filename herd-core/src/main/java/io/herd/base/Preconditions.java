@@ -20,7 +20,7 @@ public final class Preconditions {
             throw new IllegalArgumentException(String.valueOf(message));
         }
     }
-
+    
     /**
      * Ensures that the provided string <code>elem</code> isn't empty i.e. is not <code>null</code> and has content.
      * 
@@ -54,6 +54,19 @@ public final class Preconditions {
             throw new NullPointerException(message.toString());
         }
         return elem;
+    }
+
+    /**
+     * Ensures that the provided <code>number</code> is a positive integer and not zero.
+     * 
+     * @param number The <code>number</code> being validated.
+     * @param message The error message to show in case the <code>number</code> is negative or zero.
+     * @throws IllegalArgumentException of the validation fails.
+     */
+    public static final void checkPositive(int number, Object message) {
+        if (number <= 0) {
+            throw new IllegalArgumentException(String.valueOf(message));
+        }
     }
 
     /**

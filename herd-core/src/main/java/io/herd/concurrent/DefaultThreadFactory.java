@@ -61,12 +61,22 @@ public class DefaultThreadFactory implements ThreadFactory {
     }
 
     @Override
-    public Thread newThread(Runnable r) {
+    public Thread newThread(final Runnable r) {
 
         String tName = threadName + threadIncrement.getAndIncrement();
         logger.debug("Creating thread {}.", tName);
 
-        Thread t = new Thread(r);
+        Thread t = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    r.run();
+                } catch (Exception e) {
+                    logger.error("Failed to execute runnable due to {}.", e.toString());
+                }
+            }
+        });
         t.setName(tName);
         t.setDaemon(isDaemon);
         return t;
