@@ -39,17 +39,18 @@ public class SchedulerBuilder {
     private int poolSize;
     private ThreadFactory threadFactory;
     private List<RunnableTask> taskList = new LinkedList<>();
-    private final Emitter emitter;
+    private List<RunnableTask> delayedTaskList = new LinkedList<>();
+    private final Emitter<Event> emitter;
 
-    public SchedulerBuilder(Emitter emitter) {
+    public SchedulerBuilder(Emitter<Event> emitter) {
         this(DEFAULT_POOL_SIZE, new DefaultThreadFactory(), emitter);
     }
 
-    public SchedulerBuilder(int poolSize, Emitter emitter) {
+    public SchedulerBuilder(int poolSize, Emitter<Event> emitter) {
         this(poolSize, new DefaultThreadFactory(), emitter);
     }
 
-    public SchedulerBuilder(int poolSize, ThreadFactory threadFactory, Emitter emitter) {
+    public SchedulerBuilder(int poolSize, ThreadFactory threadFactory, Emitter<Event> emitter) {
         this.poolSize = poolSize;
         this.threadFactory = threadFactory;
         this.emitter = emitter;
@@ -59,6 +60,9 @@ public class SchedulerBuilder {
         ScheduledExecutorService service = Executors.newScheduledThreadPool(poolSize, threadFactory);
         for (RunnableTask task : taskList) {
             service.scheduleAtFixedRate(getTask(task.runnable), 1000, task.period, TimeUnit.MILLISECONDS);
+        }
+        for (RunnableTask task : delayedTaskList) {
+            service.scheduleWithFixedDelay(getTask(task.runnable), 1000, task.period, TimeUnit.MILLISECONDS);
         }
         return service;
     }
@@ -79,12 +83,12 @@ public class SchedulerBuilder {
 
             @Override
             public void run() {
-                long time = System.currentTimeMillis();
+                Event event = new Event(timed.name()).start();
                 try {
                     runnable.run();
-                    emitter.emit(new Event(timed.name(), System.currentTimeMillis() - time, false));
+                    emitter.emit(event.stop());
                 } catch (Exception e) {
-                    emitter.emit(new Event(timed.name(), System.currentTimeMillis() - time, true));
+                    emitter.emit(event.stopWithFailure());
                     throw e;
                 }
             }
@@ -108,6 +112,27 @@ public class SchedulerBuilder {
         checkPositive(period, "Must specify a period > 0");
         checkNotNull(runnable, "Must specify a non null runnable");
         this.taskList.add(new RunnableTask(period, runnable));
+        return this;
+    }
+
+    /**
+     * Registers a <code>runnable</code> that will execute a periodic action and subsequently with the given delay
+     * between the termination of one execution and the commencement of the next. If any execution of the task
+     * encounters an exception, subsequent executions are suppressed. Otherwise, the task will only terminate via
+     * cancellation or termination of the executor.
+     *
+     * @param period the delay between the termination of one execution and the commencement of the next
+     * @param runnable the task to execute
+     * @return a ScheduledFuture representing pending completion of the task, and whose {@code get()} method will throw
+     *         an exception upon cancellation
+     * @return This builder to allow chaining.
+     * @throws IllegalArgumentException if the period specified isn't valid (<= 0).
+     * @throws NullPointerException if the runner is <code>null</code>.
+     */
+    public SchedulerBuilder scheduleWithFixedDelay(int period, Runnable runnable) {
+        checkPositive(period, "Must specify a period > 0");
+        checkNotNull(runnable, "Must specify a non null runnable");
+        this.delayedTaskList.add(new RunnableTask(period, runnable));
         return this;
     }
 
