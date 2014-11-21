@@ -13,7 +13,7 @@ public class ExampleApplication extends Application {
     @Override
     protected void initialize() {
         registerService(
-                createService("HTTP Service", new Http(null)).listen(8080).serving(ExampleResource.class));
+                createService("HTTP Service", new Http(null)).listen(8080).serving(new ExampleResource()));
         
         registerService(
                 createService("Thrift Servive", new Thrift()).listen(9090));
