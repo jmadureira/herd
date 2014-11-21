@@ -74,7 +74,7 @@ public class DisruptorEventBus implements EventBus, Service {
 
     @SuppressWarnings("unchecked")
     @Override
-    public void subscribe(Object subscriber) {
+    public EventBus subscribe(Object subscriber) {
         if (isRunning()) {
             throw new IllegalStateException("Cannot add a new subscription while the event bus is running.");
         }
@@ -83,10 +83,11 @@ public class DisruptorEventBus implements EventBus, Service {
         } catch(SubscriberException e) {
             logger.warn(e.toString());
         }
+        return this;
     }
 
     @Override
-    public void unsubscribe(Object subscriber) {
+    public EventBus unsubscribe(Object subscriber) {
         throw new UnsupportedOperationException("Cannot unsubscribe listeners at the moment.");
     }
 
