@@ -15,7 +15,7 @@ import org.apache.thrift.protocol.TProtocolUtil;
 import org.apache.thrift.protocol.TType;
 
 class ThriftDecoder extends ByteToMessageDecoder {
-
+    
     /**
      * {@value #MESSAGE_FRAME_SIZE} bytes to encode an integer.
      */
@@ -26,7 +26,7 @@ class ThriftDecoder extends ByteToMessageDecoder {
     public ThriftDecoder(int maxFrameSize) {
         this.maxFrameSize = maxFrameSize;
     }
-
+    
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
 
@@ -37,6 +37,7 @@ class ThriftDecoder extends ByteToMessageDecoder {
         }
 
         short magicNumber = in.getUnsignedByte(0);
+        
         if (magicNumber >= 0x80) {
             message = decodeUnframedMessage(ctx, in);
         } else if (readableBytes < MESSAGE_FRAME_SIZE) {

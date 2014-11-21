@@ -80,6 +80,15 @@ public class ThriftMessage extends TTransport implements ByteBufHolder {
     public ThriftMessage copy() {
         return new ThriftMessage(transportType, payload.copy());
     }
+    
+    @Override
+    public byte[] getBuffer() {
+        int readerIndex = content().readerIndex();
+        int readableBytes = content().readableBytes();
+        byte[] buffer = new byte[readableBytes];
+        content().getBytes(readerIndex, buffer);
+        return buffer;
+    }
 
     @Override
     public ThriftMessage duplicate() {
