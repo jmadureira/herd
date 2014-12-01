@@ -1,6 +1,11 @@
 package io.herd.base;
 
 import static org.junit.Assert.assertEquals;
+import io.herd.server.Application;
+import io.herd.server.ApplicationTest;
+import io.herd.server.ApplicationTest.TestApplication;
+import io.herd.server.ApplicationTest.TestConfiguration;
+import io.herd.server.Configuration;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
@@ -9,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 
 public class ReflectionsTest {
-
+    
     public static class Counter {
 
         public AtomicInteger counter = new AtomicInteger(0);
@@ -31,5 +36,11 @@ public class ReflectionsTest {
         int counter = (int) methodHandle.invokeExact(c1);
         assertEquals(1, c1.counter.get());
         assertEquals(counter, c1.counter.get());
+    }
+    
+    @Test
+    public void testGetTypeParameter() {
+        Class<Configuration> typeParameter = Reflections.getTypeParameter(TestApplication.class, Configuration.class);
+        assertEquals(TestConfiguration.class, typeParameter);
     }
 }

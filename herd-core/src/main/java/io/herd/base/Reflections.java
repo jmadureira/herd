@@ -6,6 +6,9 @@ import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 
 /**
  * Collection of utility methods to work with reflection API.
@@ -33,6 +36,18 @@ public final class Reflections {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Class<T> determineClass(Class<? super T> bound, Type candidate) {
+        if (candidate instanceof Class<?>) {
+            final Class<?> cls = (Class<?>) candidate;
+            if (bound.isAssignableFrom(cls)) {
+                return (Class<T>) cls;
+            }
+        }
+
+        return null;
     }
 
     public static final Method findAnnotatedMethod(Class<? extends Annotation> annotation, Class<?> clazz) {
@@ -71,6 +86,41 @@ public final class Reflections {
             searchClass = searchClass.getSuperclass();
         }
         return null;
+    }
+
+    /**
+     * Finds the type parameter for the given class which is assignable to the bound class.
+     * 
+     * @param klass a parameterized class
+     * @param bound the type bound
+     * @return a class' type parameter
+     * @see dropwizard-util module.
+     */
+    public static <T> Class<T> getTypeParameter(Class<?> klass, Class<? super T> bound) {
+        Type t = Preconditions.checkNotNull(klass, "Cannot determine the type parameter of a null class");
+        while (t instanceof Class<?>) {
+            t = ((Class<?>) t).getGenericSuperclass();
+        }
+        if (t instanceof ParameterizedType) {
+            for (Type param : ((ParameterizedType) t).getActualTypeArguments()) {
+                if (param instanceof Class<?>) {
+                    final Class<T> cls = determineClass(bound, param);
+                    if (cls != null) {
+                        return cls;
+                    }
+                } else if (param instanceof TypeVariable) {
+                    for (Type paramBound : ((TypeVariable<?>) param).getBounds()) {
+                        if (paramBound instanceof Class<?>) {
+                            final Class<T> cls = determineClass(bound, paramBound);
+                            if (cls != null) {
+                                return cls;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        throw new IllegalStateException("Cannot figure out type parameterization for " + klass.getName());
     }
 
     private Reflections() {
