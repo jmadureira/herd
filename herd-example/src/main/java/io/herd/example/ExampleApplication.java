@@ -4,19 +4,22 @@ import io.herd.http.Http;
 import io.herd.server.Application;
 import io.herd.thrift.Thrift;
 
-public class ExampleApplication extends Application {
+public class ExampleApplication extends Application<ExampleConfiguration> {
 
     public static void main(String[] args) {
         new ExampleApplication().run(args);
     }
 
     @Override
-    protected void initialize() {
+    protected void initialize(ExampleConfiguration configuration) {
         registerService(
-                createService("HTTP Service", new Http(null)).listen(8080).serving(new ExampleResource()));
+                createService("HTTP Service", new Http(configuration.getServerFactory()))
+                .listen(configuration.getServerFactory().getPort())
+                .serving(new ExampleResource()));
         
         registerService(
-                createService("Thrift Servive", new Thrift()).listen(9090));
+                createService("Thrift Servive", new Thrift())
+                .listen(configuration.getThriftFactory().getPort()));
     }
 
 }
