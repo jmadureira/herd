@@ -13,14 +13,21 @@
 		<java.compiler.version>1.8</java.compiler.version>
 		<java.compiler.encoding>utf-8</java.compiler.encoding>
 
+		<disruptor.version>3.3.0</disruptor.version>
 		<guava.version>15.0</guava.version>
 		<guice.version>3.0</guice.version>
 		<jackson.version>2.3.2</jackson.version>
 		<javax-validation.version>1.1.0.Final</javax-validation.version>
 		<log4j.version>2.0.2</log4j.version>
 		<netty.version>4.0.19.Final</netty.version>
+		<scala.version>2.10.4</scala.version>
+		<scala.runtime>2.10</scala.runtime>
 		<slf4j.version>1.7.7</slf4j.version>
 		<snakeyaml.version>1.13</snakeyaml.version>
+
+		<!-- plugin version -->
+		<jacoco.plugin.version>0.7.1.201405082137</jacoco.plugin.version>
+		<scala.maven.plugin.version>3.1.7-SNAPSHOT</scala.maven.plugin.version>
 
 		<!-- test stuff -->
 		<junit.version>4.11</junit.version>
@@ -40,11 +47,77 @@
 				</configuration>
 			</plugin>
 		</plugins>
+
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>net.alchim31.maven</groupId>
+					<artifactId>scala-maven-plugin</artifactId>
+					<version>${scala.maven.plugin.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.jacoco</groupId>
+					<artifactId>jacoco-maven-plugin</artifactId>
+					<version>${jacoco.plugin.version}</version>
+					<executions>
+						<execution>
+							<id>default-prepare-agent</id>
+							<goals>
+								<goal>prepare-agent</goal>
+							</goals>
+						</execution>
+						<execution>
+							<id>default-report</id>
+							<phase>prepare-package</phase>
+							<goals>
+								<goal>report</goal>
+							</goals>
+						</execution>
+						<execution>
+							<id>default-check</id>
+							<goals>
+								<goal>check</goal>
+							</goals>
+							<configuration>
+								<rules>
+									<rule>
+										<element>BUNDLE</element>
+										<limits>
+											<limit>
+												<counter>INSTRUCTION</counter>
+												<value>COVEREDRATIO</value>
+												<minimum>0.80</minimum>
+											</limit>
+											<limit>
+												<counter>LINE</counter>
+												<value>COVEREDRATIO</value>
+												<minimum>0.80</minimum>
+											</limit>
+											<limit>
+												<counter>BRANCH</counter>
+												<value>COVEREDRATIO</value>
+												<minimum>0.80</minimum>
+											</limit>
+											<limit>
+												<counter>COMPLEXITY</counter>
+												<value>COVEREDRATIO</value>
+												<minimum>0.80</minimum>
+											</limit>
+										</limits>
+									</rule>
+								</rules>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 	</build>
 
 	<modules>
 		<module>herd-core</module>
 		<module>herd-example</module>
+		<module>herd-example-scala</module>
 		<module>herd-fcq</module>
 		<module>herd-http</module>
 		<module>herd-thrift</module>
@@ -53,6 +126,11 @@
 	<dependencyManagement>
 		<dependencies>
 			<!-- herd modules -->
+			<dependency>
+				<groupId>io.herd</groupId>
+				<artifactId>herd-core</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 			<dependency>
 				<groupId>io.herd</groupId>
 				<artifactId>herd-core</artifactId>
@@ -73,6 +151,11 @@
 				<groupId>io.netty</groupId>
 				<artifactId>netty-all</artifactId>
 				<version>${netty.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.lmax</groupId>
+				<artifactId>disruptor</artifactId>
+				<version>${disruptor.version}</version>
 			</dependency>
 
 			<dependency>
@@ -106,6 +189,18 @@
 				<groupId>org.yaml</groupId>
 				<artifactId>snakeyaml</artifactId>
 				<version>${snakeyaml.version}</version>
+			</dependency>
+
+			<!-- Scala dependencies -->
+			<dependency>
+				<groupId>org.scala-lang</groupId>
+				<artifactId>scala-library</artifactId>
+				<version>${scala.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.scala-lang</groupId>
+				<artifactId>scala-compiler</artifactId>
+				<version>${scala.version}</version>
 			</dependency>
 
 			<!-- Logging dependencies -->
