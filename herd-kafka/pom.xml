@@ -14,7 +14,7 @@
 	<name>Herd Kafka module</name>
 
 	<properties>
-		<kafka.version>0.8.0</kafka.version>
+		<kafka.version>0.8.1.1</kafka.version>
 	</properties>
 
 	<build>
@@ -23,7 +23,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
-			<artifactId>kafka_2.9.2</artifactId>
+			<artifactId>kafka_${scala.runtime}</artifactId>
 			<version>${kafka.version}</version>
 		</dependency>
 
@@ -39,7 +39,7 @@
 
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
-			<artifactId>kafka_2.9.2</artifactId>
+			<artifactId>kafka_${scala.runtime}</artifactId>
 			<version>${kafka.version}</version>
 			<classifier>test</classifier>
 			<scope>test</scope>

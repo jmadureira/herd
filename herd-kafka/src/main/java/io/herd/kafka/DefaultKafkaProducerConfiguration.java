@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 @JsonTypeName("default")
-public class DefaultKafkaConfiguration implements KafkaConfiguration {
+public class DefaultKafkaProducerConfiguration implements KafkaProducerConfiguration {
 
     private String metadataBrokerList;
     private String serializerClass;
@@ -16,13 +16,13 @@ public class DefaultKafkaConfiguration implements KafkaConfiguration {
         return keySerializerClass;
     }
 
-    @JsonProperty("metadata.broker.list")
+    @JsonProperty(METADATA_BROKER_LIST)
     @Override
     public String getMetadataBrokerList() {
         return metadataBrokerList;
     }
 
-    @JsonProperty("serializer.class")
+    @JsonProperty(SERIALIZER_CLASS)
     @Override
     public String getSerializerClass() {
         return serializerClass;
@@ -33,12 +33,12 @@ public class DefaultKafkaConfiguration implements KafkaConfiguration {
         this.keySerializerClass = keySerializerClass;
     }
 
-    @JsonProperty("metadata.broker.list")
+    @JsonProperty(METADATA_BROKER_LIST)
     public void setMetadataBrokerList(String metadataBrokerList) {
         this.metadataBrokerList = metadataBrokerList;
     }
 
-    @JsonProperty("serializer.class")
+    @JsonProperty(SERIALIZER_CLASS)
     public void setSerializerClass(String serializerClass) {
         this.serializerClass = serializerClass;
     }
