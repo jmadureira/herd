@@ -12,14 +12,11 @@ public class ExampleApplication extends Application<ExampleConfiguration> {
 
     @Override
     protected void initialize(ExampleConfiguration configuration) {
-        registerService(
-                createService("HTTP Service", new Http(configuration.getServerFactory()))
+        registerService(new Http(configuration.getServerFactory())
                 .listen(configuration.getServerFactory().getPort())
                 .serving(new ExampleResource()));
         
-        registerService(
-                createService("Thrift Servive", new Thrift())
-                .listen(configuration.getThriftFactory().getPort()));
+        registerService(new Thrift(configuration.getThriftFactory()));
     }
 
 }

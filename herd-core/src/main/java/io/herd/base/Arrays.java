@@ -1,5 +1,7 @@
 package io.herd.base;
 
+import java.util.function.Consumer;
+
 /**
  * Extension to the {@link java.util.Arrays} class with additional set of helper methods to deal with arrays.
  * 
@@ -7,6 +9,23 @@ package io.herd.base;
  *
  */
 public final class Arrays {
+
+    /**
+     * Iterates over the elements of this array performing the given consumer action on each one of them. Has no effect
+     * if the provided array is null or empty.
+     * 
+     * @param array
+     * @param consumer
+     */
+    public static <T> void each(T[] array, Consumer<T> consumer) {
+        if (array == null) {
+            return;
+        }
+        Preconditions.checkNotNull(consumer, "Iteration requires a consumer");
+        for (T obj : array) {
+            consumer.accept(obj);
+        }
+    }
 
     /**
      * Swaps the elements at the specified positions in the specified array. Note that this methods won't do any

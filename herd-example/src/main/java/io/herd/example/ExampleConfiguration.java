@@ -6,7 +6,6 @@ import javax.validation.constraints.NotNull;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.herd.base.Configuration;
-import io.herd.http.DefaultHttpConfiguration;
 import io.herd.http.HttpConfiguration;
 import io.herd.thrift.DefaultThriftConfiguration;
 import io.herd.thrift.ThriftConfiguration;
@@ -15,7 +14,7 @@ public class ExampleConfiguration extends Configuration {
 
     @Valid
     @NotNull
-    private HttpConfiguration http = new DefaultHttpConfiguration();
+    private HttpConfiguration http;
 
     @Valid
     @NotNull

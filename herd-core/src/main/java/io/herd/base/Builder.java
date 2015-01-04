@@ -10,6 +10,7 @@ public interface Builder<T> {
     /**
      * 
      * @return A new instance of type <code>T</code>.
+     * @throws IllegalStateException if the builder is unable to build an instance of type <code>T</code>.
      */
     T build();
 }

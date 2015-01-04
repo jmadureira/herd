@@ -11,8 +11,7 @@ object ScalaApplication extends ScalaExampleApplication with App {
   run(args)
 
   def initialize(configuration: ScalaExampleConfiguration): Unit = {
-    registerService(
-      createService("Thrift Servive", new Thrift()).listen(9090))
+    registerService(new Thrift(null).listen(9090))
   }
 }
 
