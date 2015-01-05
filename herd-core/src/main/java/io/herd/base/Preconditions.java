@@ -12,15 +12,17 @@ public final class Preconditions {
      * @param elements An array being validated
      * @param size The expected size of the array
      * @param message The error message to show in case the <code>elements</code> array isn't valid.
+     * @return elements the provided array
      * @throws NullPointerException if the array is null
      * @throws IllegalArgumentException of the array doesn't have the expected size
      */
-    public static final void checkArraySize(Object[] elements, int size, Object message) {
+    public static final Object[] checkArraySize(Object[] elements, int size, Object message) {
         if (checkNotNull(elements, message).length != size) {
             throw new IllegalArgumentException(String.valueOf(message));
         }
+        return elements;
     }
-    
+
     /**
      * Ensures that the provided string <code>elem</code> isn't empty i.e. is not <code>null</code> and has content.
      * 
@@ -81,6 +83,23 @@ public final class Preconditions {
         if (!expression) {
             throw new IllegalArgumentException(String.valueOf(message));
         }
+    }
+
+    /**
+     * Ensures that the provided value is within a specified range.
+     * 
+     * @param value The value being checked
+     * @param min The minimum allowed value (inclusive)
+     * @param max The maximum allowed value (exclusive)
+     * @param message The error message to show in case the provided value isn't valid.
+     * @return value the provided value
+     * @throws IllegalArgumentException if the value isn't valid
+     */
+    public static final int checkValueRange(int value, int min, int max, Object message) {
+        if (value <= min || value >= max) {
+            throw new IllegalArgumentException(String.valueOf(message));
+        }
+        return value;
     }
 
     private Preconditions() {

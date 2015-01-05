@@ -1,5 +1,7 @@
 package io.herd.thrift;
 
+import static io.herd.base.Preconditions.checkNotEmpty;
+import static io.herd.base.Preconditions.checkValueRange;
 import io.herd.ServerRuntime;
 import io.herd.base.Builder;
 import io.herd.netty.NettyServerRuntime;
@@ -24,17 +26,6 @@ public class Thrift implements Builder<ServerRuntime> {
     }
 
     /**
-     * Creates a new builder for thrift services using the provided configuration.
-     * 
-     * @param configuration The configuration that will be used. If
-     *            <code>null<code> is passed it will default to the thrift default configurations.
-     * @see #Thrift(String, ThriftConfiguration)
-     */
-    public Thrift(ThriftConfiguration configuration) {
-        this(DEFAULT_NAME, configuration);
-    }
-
-    /**
      * 
      * @param serviceName The name of service being built. Can be changed afterwards and before calling {@link #build()}
      *            by using {@link #named(String)}.
@@ -46,29 +37,52 @@ public class Thrift implements Builder<ServerRuntime> {
         this.configuration = configuration == null ? new DefaultThriftConfiguration() : configuration;
     }
 
-    public Thrift named(String serviceName) {
-        this.serviceName = serviceName;
-        return this;
+    /**
+     * Creates a new builder for thrift services using the provided configuration.
+     * 
+     * @param configuration The configuration that will be used. If
+     *            <code>null<code> is passed it will default to the thrift default configurations.
+     * @see #Thrift(String, ThriftConfiguration)
+     */
+    public Thrift(ThriftConfiguration configuration) {
+        this(DEFAULT_NAME, configuration);
     }
 
     @Override
     public ServerRuntime build() {
         NettyServerRuntime serverRuntime = new NettyServerRuntime(serviceName, getHandler());
-        if (port > 0) {
-            serverRuntime.setPort(port);
-        } else {
-            serverRuntime.setPort(configuration.getPort());
-        }
+        serverRuntime.setPort(port > 0 ? port : configuration.getPort());
+        
         return serverRuntime;
-    }
-
-    public Thrift listen(int port) {
-        this.port = port;
-        return this;
     }
 
     private ChannelHandler getHandler() {
         return new ThriftChannelInitializer(tProcessorFactory);
+    }
+
+    /**
+     * Overrides the current port configuration to the specified value.
+     * 
+     * @param port The new port where this service will be listening to
+     * @return This builder to allow chaining.
+     * @throws IllegalArgumentException if the port value is invalid
+     */
+    public Thrift listen(int port) {
+        this.port = checkValueRange(port, 1, Short.MAX_VALUE,
+                String.format("Port %d must be between 1 and %d", port, Short.MAX_VALUE));
+        return this;
+    }
+
+    /**
+     * Overrides the current name of this service. Can be called multiple times.
+     * 
+     * @param serviceName The new name for this service
+     * @return This builder to allow chaining
+     * @throws IllegalArgumentException if the new service name is <code>null</code> or empty.
+     */
+    public Thrift named(String serviceName) {
+        this.serviceName = checkNotEmpty(serviceName, "Must provide a non-empty service name");
+        return this;
     }
 
     public Thrift serving(TProcessor resource) {
