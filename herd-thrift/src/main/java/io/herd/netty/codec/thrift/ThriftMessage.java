@@ -45,7 +45,7 @@ public class ThriftMessage extends TTransport implements ByteBufHolder {
 
     @Override
     public boolean isOpen() {
-        return true;
+        return payload.refCnt() > 0;
     }
 
     @Override
@@ -80,7 +80,7 @@ public class ThriftMessage extends TTransport implements ByteBufHolder {
     public ThriftMessage copy() {
         return new ThriftMessage(transportType, payload.copy());
     }
-    
+
     @Override
     public byte[] getBuffer() {
         int readerIndex = content().readerIndex();
