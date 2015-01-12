@@ -5,6 +5,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,11 +17,11 @@ public class GossipDigest implements Comparable<GossipDigest> {
 
     public static final ISerializer<GossipDigest> serializer = new GossipDigestSerializer();
 
-    final InetAddress endpoint;
+    final InetSocketAddress endpoint;
     final int generation;
     final long maxVersion;
 
-    public GossipDigest(InetAddress endpoint, int generation, long maxVersion) {
+    public GossipDigest(InetSocketAddress endpoint, int generation, long maxVersion) {
         this.endpoint = endpoint;
         this.generation = generation;
         this.maxVersion = maxVersion;
@@ -64,13 +65,14 @@ final class GossipDigestSerializer implements ISerializer<GossipDigest> {
     @Override
     public GossipDigest deserialize(ChannelHandlerContext ctx, ByteBuf in) {
         try {
+            int port = in.readShort();
             int addressLength = in.readByte();
             byte[] addressArray = new byte[addressLength];
             in.readBytes(addressArray);
             InetAddress endpoint = InetAddress.getByAddress(addressArray);
             int generation = in.readInt();
             long maxVersion = in.readLong();
-            return new GossipDigest(endpoint, generation, maxVersion);
+            return new GossipDigest(new InetSocketAddress(endpoint, port), generation, maxVersion);
         } catch (Exception e) {
             logger.error("Failed to deserialize GossipDigest due to {}.", e.toString());
             return null;

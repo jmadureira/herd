@@ -5,14 +5,15 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 public class GossipDigestAckTest {
 
@@ -23,7 +24,7 @@ public class GossipDigestAckTest {
         GossipMessageDecoder decoder = new GossipMessageDecoder();
         
         List<GossipDigest> digestList = new ArrayList<>();
-        Map<InetAddress, EndpointState> nodeStateMap = Maps.newHashMap();
+        Map<InetSocketAddress, EndpointState> nodeStateMap = new HashMap<>();
         ByteBuf buffer = Unpooled.buffer();
         GossipDigestAck msg = new GossipDigestAck(digestList, nodeStateMap);
         
@@ -44,12 +45,12 @@ public class GossipDigestAckTest {
         GossipMessageDecoder decoder = new GossipMessageDecoder();
         
         List<GossipDigest> digestList = new ArrayList<>();
-        digestList.add(new GossipDigest(InetAddress.getLocalHost(), 4, 324L));
+        digestList.add(new GossipDigest(new InetSocketAddress(InetAddress.getLocalHost(), 8080), 4, 324L));
         
-        Map<InetAddress, EndpointState> nodeStateMap = Maps.newHashMap();
+        Map<InetSocketAddress, EndpointState> nodeStateMap = new HashMap<>();
         HeartBeatState hbState = new HeartBeatState(5, 1234L);
         EndpointState state = new EndpointState(hbState);
-        nodeStateMap.put(InetAddress.getLocalHost(), state);
+        nodeStateMap.put(new InetSocketAddress(InetAddress.getLocalHost(), 8080), state);
         
         ByteBuf buffer = Unpooled.buffer();
         GossipDigestAck msg = new GossipDigestAck(digestList, nodeStateMap);
@@ -63,12 +64,12 @@ public class GossipDigestAckTest {
         
         assertEquals(1, result.getDigest().size());
         GossipDigest digest = result.getDigest().get(0);
-        assertEquals(InetAddress.getLocalHost(), digest.endpoint);
+        assertEquals(new InetSocketAddress(InetAddress.getLocalHost(), 8080), digest.endpoint);
         assertEquals(4, digest.generation);
         assertEquals(324L, digest.maxVersion);
         
         assertEquals(1, result.getEndpointStates().size());
-        EndpointState endpointState = result.getEndpointStates().get(InetAddress.getLocalHost());
+        EndpointState endpointState = result.getEndpointStates().get(new InetSocketAddress(InetAddress.getLocalHost(), 8080));
         assertEquals(5, endpointState.getHeartBeatState().generation);
         assertEquals(1234L, endpointState.getHeartBeatState().version);
     }

@@ -12,15 +12,25 @@ import io.netty.channel.ChannelHandlerContext;
 public class EndpointState {
 
     public static final EndpointStateSerializer serializer = new EndpointStateSerializer();
-    
+
     private volatile HeartBeatState heartBeatState;
-    
+
     EndpointState(HeartBeatState initialHbState) {
         this.heartBeatState = initialHbState;
     }
-    
+
     HeartBeatState getHeartBeatState() {
         return heartBeatState;
+    }
+
+    /**
+     * Returns the max version of this endpoint which is either the heartbeat version or a version from one of the
+     * {@link ApplicationState}.
+     * 
+     * @return The max version this node currently know about this endpoint
+     */
+    long getMaxVersion() {
+        return heartBeatState.version;
     }
 }
 

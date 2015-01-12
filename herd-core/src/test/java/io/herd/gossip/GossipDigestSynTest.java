@@ -5,6 +5,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,7 +42,7 @@ public class GossipDigestSynTest {
         GossipMessageDecoder decoder = new GossipMessageDecoder();
         
         List<GossipDigest> digestList = new ArrayList<>();
-        digestList.add(new GossipDigest(InetAddress.getLocalHost(), 4, 324L));
+        digestList.add(new GossipDigest(new InetSocketAddress(InetAddress.getLocalHost(), 8080), 4, 324L));
         ByteBuf buffer = Unpooled.buffer();
         GossipDigestSyn msg = new GossipDigestSyn(digestList);
         
@@ -54,7 +55,7 @@ public class GossipDigestSynTest {
         
         assertEquals(1, result.getDigest().size());
         GossipDigest digest = result.getDigest().get(0);
-        assertEquals(InetAddress.getLocalHost(), digest.endpoint);
+        assertEquals(new InetSocketAddress(InetAddress.getLocalHost(), 8080), digest.endpoint);
         assertEquals(4, digest.generation);
         assertEquals(324L, digest.maxVersion);
     }

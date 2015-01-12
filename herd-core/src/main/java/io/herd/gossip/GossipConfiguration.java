@@ -23,7 +23,7 @@ public interface GossipConfiguration {
 	 * @return The name of the gossip service.
 	 */
 	String getServiceName();
-
+	
 	/**
 	 * Returns whether gossiper is enabled on this system or not. In practice to
 	 * indicate that gossiper is enabled one only needs to specify at least one

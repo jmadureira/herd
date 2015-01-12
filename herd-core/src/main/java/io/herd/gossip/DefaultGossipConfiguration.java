@@ -12,40 +12,40 @@ public class DefaultGossipConfiguration implements GossipConfiguration {
     private int port;
 
     private String serviceName = "gossiper";
-    
+
     private Set<String> seedNodes;
 
     @JsonProperty
     public int getPort() {
         return port;
-	}
+    }
 
     @JsonProperty
-	public Set<String> getSeedNodes() {
-		return seedNodes;
-	}
+    public Set<String> getSeedNodes() {
+        return seedNodes;
+    }
 
     @JsonProperty
     public String getServiceName() {
         return serviceName;
     }
 
-	@JsonProperty
-	public void setPort(int port) {
-		this.port = port;
-	}
+    @JsonProperty
+    public void setPort(int port) {
+        this.port = port;
+    }
 
-	@JsonProperty
-	public void setSeedNodes(Set<String> seedNodes) {
-		this.seedNodes = seedNodes;
-	}
+    @JsonProperty
+    public void setSeedNodes(Set<String> seedNodes) {
+        this.seedNodes = seedNodes;
+    }
 
-	@JsonProperty
+    @JsonProperty
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
     }
 
-	@Override
+    @Override
     public String toString() {
         return Objects
                 .toStringHelper(this)

@@ -6,25 +6,24 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Maps;
-
 public class GossipDigestAck2 {
 
     public static final GossipDigestAck2Serializer serializer = new GossipDigestAck2Serializer();
 
-    final Map<InetAddress, EndpointState> nodeStateMap;
+    final Map<InetSocketAddress, EndpointState> nodeStateMap;
 
-    GossipDigestAck2(Map<InetAddress, EndpointState> nodeStateMap) {
+    GossipDigestAck2(Map<InetSocketAddress, EndpointState> nodeStateMap) {
         this.nodeStateMap = nodeStateMap;
     }
     
-    Map<InetAddress, EndpointState> getEndpointStates() {
+    Map<InetSocketAddress, EndpointState> getEndpointStates() {
         return nodeStateMap;
     }
     
@@ -43,7 +42,7 @@ final class GossipDigestAck2Serializer implements ISerializer<GossipDigestAck2> 
         out.writeByte((byte) 'E');
         out.writeInt(length(t));
         out.writeInt(t.nodeStateMap.size());
-        for (Map.Entry<InetAddress, EndpointState> nodeState : t.nodeStateMap.entrySet()) {
+        for (Map.Entry<InetSocketAddress, EndpointState> nodeState : t.nodeStateMap.entrySet()) {
             serialize(nodeState.getKey(), out);
             EndpointState.serializer.serialize(ctx, nodeState.getValue(), out);
         }
@@ -58,10 +57,10 @@ final class GossipDigestAck2Serializer implements ISerializer<GossipDigestAck2> 
             return null;
         }
         int length = in.readInt();
-        Map<InetAddress, EndpointState> nodeStateMap = Maps.newHashMap();
+        Map<InetSocketAddress, EndpointState> nodeStateMap = new HashMap<>();
         for (int i = 0; i < length; i++) {
             try {
-                InetAddress endpoint = deserializeAddress(in);
+                InetSocketAddress endpoint = deserializeSocketAddress(in);
                 EndpointState state = EndpointState.serializer.deserialize(ctx, in);
                 nodeStateMap.put(endpoint, state);
             } catch (Exception e) {
@@ -75,7 +74,7 @@ final class GossipDigestAck2Serializer implements ISerializer<GossipDigestAck2> 
     public int length(GossipDigestAck2 t) {
         // the 4 bytes for the nodes state map length
         int size = 4;
-        for (Map.Entry<InetAddress, EndpointState> nodeState : t.nodeStateMap.entrySet()) {
+        for (Map.Entry<InetSocketAddress, EndpointState> nodeState : t.nodeStateMap.entrySet()) {
             size += Sizes.sizeOf(nodeState.getKey());
             size += EndpointState.serializer.length(nodeState.getValue());
         }

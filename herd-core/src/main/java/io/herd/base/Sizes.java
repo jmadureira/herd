@@ -2,6 +2,7 @@ package io.herd.base;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 /**
  * Collection of utility methods to help determine the size of attributes.
@@ -30,6 +31,17 @@ public final class Sizes {
         } else {
             return 16;
         }
+    }
+
+    /**
+     * Returns the size of an {@link InetSocketAddress} in bytes whic will be equal to the size of the
+     * {@link InetAddress} plus the size of a short value corresponding to the port.
+     * 
+     * @param i an valid {@link InetSocketAddress}.
+     * @return {@link Short#BYTES} plus 4 if its an {@link Inet4Address} or 16 otherwise.
+     */
+    public static final int sizeOf(InetSocketAddress address) {
+        return Short.BYTES + sizeOf(address.getAddress());
     }
 
     /**
