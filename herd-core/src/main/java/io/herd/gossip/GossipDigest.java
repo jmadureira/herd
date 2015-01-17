@@ -6,6 +6,7 @@ import io.netty.channel.ChannelHandlerContext;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,9 @@ public class GossipDigest implements Comparable<GossipDigest> {
         this.maxVersion = maxVersion;
     }
 
+    /**
+     * On {@link GossipDigest} comparison we're mainly interested in comparing versions so we ignore the actual address.
+     */
     @Override
     public int compareTo(GossipDigest gDigest) {
         if (generation != gDigest.generation) {
@@ -37,6 +41,27 @@ public class GossipDigest implements Comparable<GossipDigest> {
          * latest version and the one we have is higher than Integer.MAX_VALUE.
          */
         return (int) (maxVersion - gDigest.maxVersion);
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof GossipDigest)) {
+            return false;
+        }
+        
+        if (this == obj) {
+            return true;
+        }
+
+        GossipDigest other = (GossipDigest) obj;
+        return this.generation == other.generation
+                && this.maxVersion == other.maxVersion
+                && this.endpoint.equals(other.endpoint);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(endpoint, generation, maxVersion);
     }
 
     public String toString() {
