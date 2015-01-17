@@ -67,6 +67,7 @@ class GossipServer implements ServerRuntime {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
             this.channel.channel().closeFuture().sync();
+            gossiper.stop();
             isRunning = false;
         } catch (Exception e) {
             logger.error("Failed to gracefully shutdown server {} due to {}", serverName, e.toString());

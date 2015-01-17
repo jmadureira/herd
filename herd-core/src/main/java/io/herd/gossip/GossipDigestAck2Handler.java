@@ -13,6 +13,12 @@ public class GossipDigestAck2Handler extends SimpleChannelInboundHandler<GossipD
 
     private static final Logger logger = LoggerFactory.getLogger(GossipDigestAck2Handler.class);
 
+    private final Gossiper gossiper;
+
+    GossipDigestAck2Handler(Gossiper gossiper) {
+        this.gossiper = gossiper;
+    }
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, GossipDigestAck2 msg) throws Exception {
         logger.debug("Got back {}", msg);
@@ -21,7 +27,7 @@ public class GossipDigestAck2Handler extends SimpleChannelInboundHandler<GossipD
         Map<InetSocketAddress, EndpointState> newEndpointStates = msg.getEndpointStates();
 
         if (newEndpointStates.size() > 0) {
-            Gossiper.instance.updateStates(newEndpointStates);
+            gossiper.updateStates(newEndpointStates);
         }
         ctx.close();
     }

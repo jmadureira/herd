@@ -16,27 +16,33 @@ public class GossipDigestAckHandler extends SimpleChannelInboundHandler<GossipDi
 
     private static final Logger logger = LoggerFactory.getLogger(GossipDigestAckHandler.class);
 
+    private final Gossiper gossiper;
+
+    GossipDigestAckHandler(Gossiper gossiper) {
+        this.gossiper = gossiper;
+    }
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, GossipDigestAck msg) throws Exception {
         logger.debug("Got back {}", msg);
-        
+
         // the list of digests the gossipee asked for
         List<GossipDigest> digestList = msg.getDigest();
         // an updated state of endpoints we should update on our side
         Map<InetSocketAddress, EndpointState> newEndpointStates = msg.getEndpointStates();
-        
-        if(newEndpointStates.size() > 0) {
-            Gossiper.instance.updateStates(newEndpointStates);
+
+        if (newEndpointStates.size() > 0) {
+            gossiper.updateStates(newEndpointStates);
         }
-        
+
         Map<InetSocketAddress, EndpointState> nodeStateMap = new HashMap<>();
-        for(GossipDigest digest : digestList) {
+        for (GossipDigest digest : digestList) {
             InetSocketAddress address = digest.endpoint;
-            EndpointState endpointState = Gossiper.instance.getEndpointState(address, digest.maxVersion);
-            if(endpointState != null) {
+            EndpointState endpointState = gossiper.getEndpointState(address, digest.maxVersion);
+            if (endpointState != null) {
                 nodeStateMap.put(address, endpointState);
             }
-            
+
         }
         ctx.writeAndFlush(new GossipDigestAck2(nodeStateMap)).addListener(ChannelFutureListener.CLOSE);
     }

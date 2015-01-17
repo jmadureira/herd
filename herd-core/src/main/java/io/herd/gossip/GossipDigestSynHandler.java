@@ -18,7 +18,7 @@ public class GossipDigestSynHandler extends SimpleChannelInboundHandler<GossipDi
     
     private final Gossiper gossiper;
     
-    public GossipDigestSynHandler(Gossiper gossiper) {
+    GossipDigestSynHandler(Gossiper gossiper) {
         this.gossiper = gossiper;
     }
 
@@ -33,12 +33,12 @@ public class GossipDigestSynHandler extends SimpleChannelInboundHandler<GossipDi
         logger.debug("Received " + msg);
         
         List<GossipDigest> digests = msg.getDigest();
-        
         List<GossipDigest> deltaDigests = new ArrayList<>();
         Map<InetSocketAddress, EndpointState> nodeStateMap = new HashMap<>();
         
-        
         gossiper.determineEndpointStateDeltas(digests, deltaDigests, nodeStateMap);
+        
+        logger.debug("Asking for updates for {}. Sending updates for {}", deltaDigests, nodeStateMap);
         ctx.write(new GossipDigestAck(deltaDigests, nodeStateMap));
     }
 
