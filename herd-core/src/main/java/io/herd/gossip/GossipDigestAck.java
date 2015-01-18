@@ -98,7 +98,7 @@ final class GossipDigestAckSerializer implements ISerializer<GossipDigestAck> {
         for (GossipDigest digest : t.digests) {
             size += GossipDigest.serializer.length(digest);
         }
-        // another 4 bytes for the nodes tate map length
+        // another 4 bytes for the nodes state map length
         size += 4;
         for (Map.Entry<InetSocketAddress, EndpointState> nodeState : t.nodeStateMap.entrySet()) {
             size += Sizes.sizeOf(nodeState.getKey());

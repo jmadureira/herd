@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link GossipDigest} holds the largest version of the state from a given endpoint know by the local endpoint.
  */
-public class GossipDigest implements Comparable<GossipDigest> {
+class GossipDigest implements Comparable<GossipDigest> {
 
     public static final ISerializer<GossipDigest> serializer = new GossipDigestSerializer();
 

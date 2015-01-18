@@ -32,7 +32,7 @@ class HeartBeatState {
     }
 
     public String toString() {
-        return String.format("HeartBeat: generation=%d, version=%d", generation, version);
+        return String.format("{generation=%d, version=%d}", generation, version);
     }
 
     long updateVersion() {

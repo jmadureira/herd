@@ -32,6 +32,12 @@ interface ISerializer<T> {
         buf.readBytes(addressArray);
         return InetAddress.getByAddress(addressArray);
     }
+    
+    default String deserializeString(ByteBuf buf) {
+        byte[] bytes = new byte[buf.readInt()];
+        buf.readBytes(bytes);
+        return new String(bytes);
+    }
 
     /**
      * Reads an {@link InetSocketAddress} from a {@link ByteBuf}. No boundary checks are made here.
@@ -57,6 +63,11 @@ interface ISerializer<T> {
         byte[] array = address.getAddress();
         buf.writeByte(array.length);
         buf.writeBytes(array);
+    }
+    
+    default void serialize(String string, ByteBuf buf) {
+        buf.writeInt(string.length());
+        buf.writeBytes(string.getBytes());
     }
 
     default void serialize(InetSocketAddress address, ByteBuf buf) {
