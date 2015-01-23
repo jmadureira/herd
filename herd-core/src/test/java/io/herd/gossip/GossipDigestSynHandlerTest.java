@@ -1,9 +1,8 @@
 package io.herd.gossip;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.hamcrest.CoreMatchers.*;
-
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -19,7 +18,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class GossipDigestSynHandlerTest {
+public class GossipDigestSynHandlerTest implements GossipTestable {
 
     private static EventLoopGroup group;
 
@@ -27,6 +26,8 @@ public class GossipDigestSynHandlerTest {
     private Gossiper gossiper;
 
     private InetSocketAddress localhost;
+
+    private InetSocketAddress nodeAddress;
 
     @BeforeClass
     public static void createGroup() {
@@ -44,14 +45,14 @@ public class GossipDigestSynHandlerTest {
         this.gossiper = new Gossiper();
         this.gossiper.start(localhost);
         this.sc = new EmbeddedChannel(new GossipDigestSynHandler(gossiper));
+        this.nodeAddress = new InetSocketAddress(InetAddress.getByName("www.google.com"), 8080);
     }
 
     @Test
     public void testAskForUnknwonNode() throws Exception {
         int generation = (int) (System.currentTimeMillis() / 1000);
-        InetSocketAddress node = new InetSocketAddress(InetAddress.getByName("www.google.com"), 8080);
         List<GossipDigest> gDigests = new ArrayList<>();
-        gDigests.add(new GossipDigest(node, generation, 0));
+        gDigests.add(new GossipDigest(nodeAddress, generation, 0));
 
         this.sc.writeInbound(new GossipDigestSyn(gDigests));
         assertTrue(this.sc.finish());
@@ -60,59 +61,81 @@ public class GossipDigestSynHandlerTest {
         assertEquals(gDigests, ack.digests);
         assertTrue(ack.getEndpointStates().isEmpty());
     }
-    
+
     @Test
     public void testAskForRestartedNode() throws Exception {
         int generation = (int) (System.currentTimeMillis() / 1000);
-        InetSocketAddress node = new InetSocketAddress(InetAddress.getByName("www.google.com"), 8080);
         List<GossipDigest> gDigests = new ArrayList<>();
-        gDigests.add(new GossipDigest(node, generation + 1000, 0));
-        
-        this.gossiper.liveNodes.add(node);
-        this.gossiper.endpointStateMap.put(node, new EndpointState(new HeartBeatState(generation, 0)));
-        
+        gDigests.add(new GossipDigest(nodeAddress, generation + 1000, 0));
+
+        this.gossiper.liveNodes.add(nodeAddress);
+        this.gossiper.endpointStateMap.put(nodeAddress, createEndpointState(generation));
+
         this.sc.writeInbound(new GossipDigestSyn(gDigests));
         assertTrue(this.sc.finish());
-        
+
         GossipDigestAck ack = (GossipDigestAck) this.sc.readOutbound();
         assertEquals(gDigests, ack.digests);
         assertTrue(ack.getEndpointStates().isEmpty());
     }
-    
+
     @Test
     public void testDoNotAskForAnything() throws Exception {
         int generation = (int) (System.currentTimeMillis() / 1000);
-        InetSocketAddress node = new InetSocketAddress(InetAddress.getByName("www.google.com"), 8080);
         List<GossipDigest> gDigests = new ArrayList<>();
-        gDigests.add(new GossipDigest(node, generation, 0));
-        
-        this.gossiper.liveNodes.add(node);
-        this.gossiper.endpointStateMap.put(node, new EndpointState(new HeartBeatState(generation, 0)));
-        
+        gDigests.add(new GossipDigest(nodeAddress, generation, 0));
+
+        this.gossiper.liveNodes.add(nodeAddress);
+        this.gossiper.endpointStateMap.put(nodeAddress, createEndpointState(generation));
+
         this.sc.writeInbound(new GossipDigestSyn(gDigests));
         assertTrue(this.sc.finish());
-        
+
         GossipDigestAck ack = (GossipDigestAck) this.sc.readOutbound();
         assertTrue(ack.getDigest().isEmpty());
         assertTrue(ack.getEndpointStates().isEmpty());
     }
+
+    @Test
+    public void testReturnStateOfRestartedNode() throws Exception {
+        int generation = (int) (System.currentTimeMillis() / 1000);
+        EndpointState endpointState = createEndpointState(generation);
+        endpointState.addApplicationState(ApplicationState.SERVICE_NAME, new VersionedValue("Hello", 5));
+
+        this.gossiper.liveNodes.add(nodeAddress);
+        this.gossiper.endpointStateMap.put(nodeAddress, endpointState);
+
+        List<GossipDigest> gDigests = new ArrayList<>();
+        gDigests.add(new GossipDigest(nodeAddress, generation - 1000, 1000));
+        this.sc.writeInbound(new GossipDigestSyn(gDigests));
+        assertTrue(this.sc.finish());
+
+        GossipDigestAck ack = (GossipDigestAck) this.sc.readOutbound();
+        assertTrue(ack.getDigest().isEmpty());
+        assertFalse(ack.getEndpointStates().isEmpty());
+        assertEquals(1, ack.getEndpointStates().size());
+        assertEquals(endpointState.toString(), ack.getEndpointStates().get(nodeAddress).toString());
+    }
     
     @Test
-    public void testDoNotAskForOldNode() throws Exception {
+    public void testSendDeltas() throws Exception {
         int generation = (int) (System.currentTimeMillis() / 1000);
-        InetSocketAddress node = new InetSocketAddress(InetAddress.getByName("www.google.com"), 8080);
+        EndpointState endpointState = createEndpointState(generation);
+        endpointState.addApplicationState(ApplicationState.SERVICE_NAME, new VersionedValue("Hello", 5));
+        
+        this.gossiper.liveNodes.add(nodeAddress);
+        this.gossiper.endpointStateMap.put(nodeAddress, endpointState);
+        
         List<GossipDigest> gDigests = new ArrayList<>();
-        gDigests.add(new GossipDigest(node, generation - 1000, 0));
-        
-        this.gossiper.liveNodes.add(node);
-        this.gossiper.endpointStateMap.put(node, new EndpointState(new HeartBeatState(generation, 0)));
-        
+        gDigests.add(new GossipDigest(nodeAddress, generation, 0));
         this.sc.writeInbound(new GossipDigestSyn(gDigests));
         assertTrue(this.sc.finish());
         
         GossipDigestAck ack = (GossipDigestAck) this.sc.readOutbound();
         assertTrue(ack.getDigest().isEmpty());
         assertFalse(ack.getEndpointStates().isEmpty());
+        assertEquals(1, ack.getEndpointStates().size());
+        assertEquals(endpointState.toString(), ack.getEndpointStates().get(nodeAddress).toString());
     }
 
     @After

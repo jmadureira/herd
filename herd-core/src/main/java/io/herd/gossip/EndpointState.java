@@ -36,16 +36,27 @@ public class EndpointState {
         return applicationState.put(state, value);
     }
 
+    Map<ApplicationState, VersionedValue> getApplicationState() {
+        return applicationState;
+    }
+
     VersionedValue getApplicationState(ApplicationState key) {
         return applicationState.get(key);
     }
 
+    /**
+     * Returns the generation of this {@link EndpointState} which is basically the generation contained on the
+     * {@link EndpointState}.
+     * 
+     * @return This {@link EndpointState}'s generation
+     * @see EndpointState
+     */
+    int getGeneration() {
+        return heartBeatState.generation;
+    }
+    
     HeartBeatState getHeartBeatState() {
         return heartBeatState;
-    }
-
-    Map<ApplicationState, VersionedValue> getApplicationState() {
-        return applicationState;
     }
 
     /**
@@ -55,7 +66,11 @@ public class EndpointState {
      * @return The max version this node currently know about this endpoint
      */
     long getMaxVersion() {
-        return heartBeatState.version;
+        long maxVersion = heartBeatState.version;
+        for (VersionedValue value : this.applicationState.values()) {
+            maxVersion = Math.max(maxVersion, value.getVersion());
+        }
+        return maxVersion;
     }
 
     @Override
@@ -65,21 +80,6 @@ public class EndpointState {
 }
 
 final class EndpointStateSerializer implements ISerializer<EndpointState> {
-
-    @Override
-    public void serialize(ChannelHandlerContext ctx, EndpointState t, ByteBuf out) {
-
-        // serialize the heartbeatstate
-        HeartBeatState hbState = t.getHeartBeatState();
-        HeartBeatState.serializer.serialize(ctx, hbState, out);
-
-        // serialize the applicationstate
-        out.writeInt(t.getApplicationState().size());
-        for (Entry<ApplicationState, VersionedValue> entry : t.getApplicationState().entrySet()) {
-            out.writeInt(entry.getKey().ordinal());
-            VersionedValue.serializer.serialize(ctx, entry.getValue(), out);
-        }
-    }
 
     @Override
     public EndpointState deserialize(ChannelHandlerContext ctx, ByteBuf in) {
@@ -110,6 +110,21 @@ final class EndpointStateSerializer implements ISerializer<EndpointState> {
         }
 
         return length;
+    }
+
+    @Override
+    public void serialize(ChannelHandlerContext ctx, EndpointState t, ByteBuf out) {
+
+        // serialize the heartbeatstate
+        HeartBeatState hbState = t.getHeartBeatState();
+        HeartBeatState.serializer.serialize(ctx, hbState, out);
+
+        // serialize the applicationstate
+        out.writeInt(t.getApplicationState().size());
+        for (Entry<ApplicationState, VersionedValue> entry : t.getApplicationState().entrySet()) {
+            out.writeInt(entry.getKey().ordinal());
+            VersionedValue.serializer.serialize(ctx, entry.getValue(), out);
+        }
     }
 
 }

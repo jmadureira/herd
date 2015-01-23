@@ -19,7 +19,7 @@ class HeartBeatState {
 
     static final HeartBeatStateSerializer serializer = new HeartBeatStateSerializer();
 
-    int generation;
+    final int generation;
     long version;
 
     HeartBeatState(int generation) {
@@ -35,6 +35,11 @@ class HeartBeatState {
         return String.format("{generation=%d, version=%d}", generation, version);
     }
 
+    /**
+     * Updates this {@link HeartBeatState} to the latest global version available.
+     * 
+     * @return The new version of this {@link HeartBeatState}
+     */
     long updateVersion() {
         version = VersionGenerator.nextVersion();
         return version;

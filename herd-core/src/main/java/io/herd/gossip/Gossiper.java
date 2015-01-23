@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,8 +72,6 @@ public class Gossiper {
 
     private static final Logger logger = LoggerFactory.getLogger(Gossiper.class);
 
-    public static final Gossiper instance = new Gossiper();
-    
     // used to randomize the selections of nodes to gossip with
     final Random random = new Random();
     
@@ -92,7 +91,7 @@ public class Gossiper {
     // the list of seeds that constitute the core of the cluster
     final ConcurrentSkipListSet<InetSocketAddress> seedNodes = new ConcurrentSkipListSet<>(inetSocketComparator);
 
-    // the executor used when gossiping with other nodes. The gossip task shouldn't be daemon threads btw
+    // the executor used when gossiping with other nodes. The gossip tasks shouldn't be daemon threads btw
     private final ScheduledExecutorService executor = Executors
             .newSingleThreadScheduledExecutor(new DefaultThreadFactory("GossipTask-"));
 
@@ -100,7 +99,7 @@ public class Gossiper {
 
     private InetSocketAddress localhost;
 
-    private Gossiper() {
+    Gossiper() {
 
     }
 
@@ -123,13 +122,20 @@ public class Gossiper {
     private GossipDigest createGossipDigest(InetSocketAddress endpoint) {
         EndpointState epState = endpointStateMap.get(endpoint);
         if (epState != null) {
-            int generation = epState.getHeartBeatState().generation;
+            int generation = epState.getGeneration();
             long maxVersion = epState.getMaxVersion();
             return new GossipDigest(endpoint, generation, maxVersion);
         }
         return new GossipDigest(endpoint, 0, 0);
     }
 
+    /**
+     * Compares the node versions provided with what we know about the clusters.
+     * 
+     * @param digests A list of {@link GossipDigest} from different nodes
+     * @param deltaDigests A list of {@link GossipDigest} pertaining to nodes we figured out are out-of-date
+     * @param nodeStateMap A map of {@link EndpointState} holding the most recent information about nodes
+     */
     void determineEndpointStateDeltas(List<GossipDigest> digests, List<GossipDigest> deltaDigests,
             Map<InetSocketAddress, EndpointState> nodeStateMap) {
 
@@ -144,30 +150,52 @@ public class Gossiper {
                 // asking for version 0 means we are asking for everything
                 deltaDigests.add(new GossipDigest(digest.endpoint, digest.generation, 0));
             } else {
-                int localGeneration = epState.getHeartBeatState().generation;
-                long localMaxVersion = epState.getHeartBeatState().version;
+                int localGeneration = epState.getGeneration();
+                long localMaxVersion = epState.getMaxVersion();
 
                 // we see the same version of this node
                 if (remoteGeneration == localGeneration && remoteMaxVersion == localMaxVersion) {
                     continue;
                 }
 
-                // this node was restarted and we didn't know about that
                 if (remoteGeneration > localGeneration) {
+                    // this node was restarted and we didn't know about that so we request everything
                     deltaDigests.add(new GossipDigest(digest.endpoint, digest.generation, 0));
                 } else if (remoteGeneration < localGeneration) {
-                    nodeStateMap.put(digest.endpoint, epState);
-                } else {
                     /*
+                     * our generation is greater than the one provided which means that we know that the node was
+                     * restarted but the caller still doesn't know that. We send everything in this case.
                      */
+                    sendDelta(digest, nodeStateMap, 0);
+                } else {
                     if (remoteMaxVersion > localMaxVersion) {
+                        // we have an old version of the node so ask for all the changes after the version we have
                         deltaDigests.add(new GossipDigest(digest.endpoint, digest.generation, localMaxVersion));
                     } else if (remoteMaxVersion < localMaxVersion) {
-                        nodeStateMap.put(digest.endpoint, epState);
+                        // we have a more recent version so send back all the changes
+                        sendDelta(digest, nodeStateMap, remoteMaxVersion);
                     }
                 }
             }
         }
+    }
+    
+    private void sendDelta(GossipDigest digest, Map<InetSocketAddress, EndpointState> nodeStateMap, long version) {
+        EndpointState originalState = this.endpointStateMap.get(digest.endpoint);
+        EndpointState returnedState = null;
+        if (originalState != null) {
+            for (Entry<ApplicationState, VersionedValue> entry : originalState.getApplicationState().entrySet()) {
+                VersionedValue value = entry.getValue();
+                if (value.getVersion() > version) {
+                    if (returnedState == null) {
+                        returnedState = new EndpointState(originalState.getHeartBeatState());
+                    }
+                    final ApplicationState key = entry.getKey();
+                    returnedState.addApplicationState(key, value);
+                }
+            }
+        }
+        nodeStateMap.put(digest.endpoint, returnedState);
     }
 
     public EndpointState getEndpointState(InetSocketAddress address, long version) {
@@ -210,7 +238,7 @@ public class Gossiper {
         int index = (size == 1) ? 0 : random.nextInt(size);
         InetSocketAddress target = nodes.get(index);
         logger.debug("Gossiping with {}", target);
-        // TODO the actual gossiping
+        new GossipClient(this).gossip(message, target);
         return target;
     }
 
@@ -230,7 +258,7 @@ public class Gossiper {
         }
     }
     
-    public void start(int generationNumber) throws Exception {
+    private void start(int generationNumber) throws Exception {
 
         HeartBeatState hbState = new HeartBeatState(generationNumber);
         EndpointState epState = new EndpointState(hbState);
