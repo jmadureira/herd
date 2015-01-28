@@ -30,7 +30,7 @@ public class GossipDigestSynHandler extends SimpleChannelInboundHandler<GossipDi
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, GossipDigestSyn msg) throws Exception {
-        logger.debug("Received " + msg);
+        logger.trace("Received {}", msg);
         
         List<GossipDigest> digests = msg.getDigest();
         List<GossipDigest> deltaDigests = new ArrayList<>();
@@ -38,13 +38,13 @@ public class GossipDigestSynHandler extends SimpleChannelInboundHandler<GossipDi
         
         gossiper.determineEndpointStateDeltas(digests, deltaDigests, nodeStateMap);
         
-        logger.debug("Asking for updates for {}. Sending updates for {}", deltaDigests, nodeStateMap);
+        logger.trace("Asking for updates for {}. Sending updates for {}", deltaDigests, nodeStateMap);
         ctx.write(new GossipDigestAck(deltaDigests, nodeStateMap));
     }
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        logger.debug("GossipDigestSynHandler finished reading channel");
+        logger.trace("GossipDigestSynHandler finished reading channel");
         ctx.flush();
     }
     
