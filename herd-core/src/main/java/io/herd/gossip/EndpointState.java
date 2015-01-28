@@ -1,7 +1,6 @@
 package io.herd.gossip;
 
 import static io.herd.base.Sizes.sizeOf;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -23,7 +22,7 @@ public class EndpointState {
     EndpointState(HeartBeatState initialHbState) {
         this.heartBeatState = initialHbState;
     }
-
+    
     /**
      * Adds or updates a new {@link ApplicationState} to this {@link EndpointState}.
      * 
@@ -34,6 +33,34 @@ public class EndpointState {
      */
     VersionedValue addApplicationState(ApplicationState state, VersionedValue value) {
         return applicationState.put(state, value);
+    }
+
+    /**
+     * Returns a copy of this {@link EndpointState} with only the {@link ApplicationState}s that are greater than the
+     * provided version. Passing a version of 0 or less yields the same result as copying this whole
+     * {@link EndpointState}.
+     * 
+     * @param version The baseline version to which no older {@link ApplicationState}s should be returned.
+     * @return a new {@link EndpointState} instance holding only the {@link ApplicationState}s that are greater than the
+     *         specified version. Returns <code>null</code> if the version is higher than this {@link EndpointState}'s
+     *         highest version
+     * 
+     * @see EndpointState#getMaxVersion()
+     */
+    public EndpointState copyState(long version) {
+        long localVersion = getMaxVersion();
+        if (localVersion > version) {
+            EndpointState reqEndpoint = new EndpointState(getHeartBeatState());
+            for (Entry<ApplicationState, VersionedValue> entry : applicationState.entrySet()) {
+                VersionedValue value = entry.getValue();
+                if (value.getVersion() > version) {
+                    final ApplicationState key = entry.getKey();
+                    reqEndpoint.addApplicationState(key, value);
+                }
+            }
+            return reqEndpoint;
+        }
+        return null;
     }
 
     Map<ApplicationState, VersionedValue> getApplicationState() {
@@ -65,7 +92,7 @@ public class EndpointState {
      * 
      * @return The max version this node currently know about this endpoint
      */
-    long getMaxVersion() {
+    public long getMaxVersion() {
         long maxVersion = heartBeatState.version;
         for (VersionedValue value : this.applicationState.values()) {
             maxVersion = Math.max(maxVersion, value.getVersion());

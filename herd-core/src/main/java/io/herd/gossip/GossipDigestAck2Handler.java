@@ -3,9 +3,6 @@ package io.herd.gossip;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-import java.net.InetSocketAddress;
-import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,14 +18,10 @@ public class GossipDigestAck2Handler extends SimpleChannelInboundHandler<GossipD
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, GossipDigestAck2 msg) throws Exception {
-        logger.debug("Got back {}", msg);
+        logger.trace("Got back {}", msg);
 
         // an updated state of endpoints we should update on our side
-        Map<InetSocketAddress, EndpointState> newEndpointStates = msg.getEndpointStates();
-
-        if (newEndpointStates.size() > 0) {
-            gossiper.updateStates(newEndpointStates);
-        }
+        gossiper.updateStates(msg.getEndpointStates());
         ctx.close();
     }
 

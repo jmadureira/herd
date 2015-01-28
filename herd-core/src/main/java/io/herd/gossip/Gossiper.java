@@ -180,36 +180,15 @@ public class Gossiper {
         }
     }
     
-    private void sendDelta(GossipDigest digest, Map<InetSocketAddress, EndpointState> nodeStateMap, long version) {
-        EndpointState originalState = this.endpointStateMap.get(digest.endpoint);
-        EndpointState returnedState = null;
-        if (originalState != null) {
-            for (Entry<ApplicationState, VersionedValue> entry : originalState.getApplicationState().entrySet()) {
-                VersionedValue value = entry.getValue();
-                if (value.getVersion() > version) {
-                    if (returnedState == null) {
-                        returnedState = new EndpointState(originalState.getHeartBeatState());
-                    }
-                    final ApplicationState key = entry.getKey();
-                    returnedState.addApplicationState(key, value);
-                }
-            }
-        }
-        nodeStateMap.put(digest.endpoint, returnedState);
-    }
-
-    public EndpointState getEndpointState(InetSocketAddress address, long version) {
-
-        EndpointState state = endpointStateMap.get(address);
+    public void sendDelta(GossipDigest digest, Map<InetSocketAddress, EndpointState> nodeStateMap, long version) {
+        EndpointState state = endpointStateMap.get(digest.endpoint);
         if (state == null) {
-            return null;
+            return;
         }
-        long localVersion = state.getHeartBeatState().version;
-        if (localVersion > version) {
-            EndpointState reqEndpoint = new EndpointState(state.getHeartBeatState());
-            return reqEndpoint;
+        EndpointState deltaState = state.copyState(version);
+        if(deltaState != null) {
+            nodeStateMap.put(digest.endpoint, deltaState);
         }
-        return null;
     }
 
     public boolean isRunning() {
@@ -277,7 +256,48 @@ public class Gossiper {
         }
     }
 
+    /**
+     * Updates the {@link Gossiper}'s internal knowledge of the nodes with the information provided. Has no effect if
+     * the map is <code>null</code> or empty.
+     * 
+     * @param newEndpointStates A map with a set of changes that should be reconciled with the {@link Gossiper}'s
+     *            internal state.
+     */
     public void updateStates(Map<InetSocketAddress, EndpointState> newEndpointStates) {
-        endpointStateMap.putAll(newEndpointStates);
+        if (newEndpointStates == null) {
+            return;
+        }
+        for (Entry<InetSocketAddress, EndpointState> stateEntry : newEndpointStates.entrySet()) {
+            InetSocketAddress epAddress = stateEntry.getKey();
+            EndpointState remoteState = stateEntry.getValue();
+
+            EndpointState localState = this.endpointStateMap.get(epAddress);
+
+            if (localState == null) {
+                // there's no local state which means the node is new so add it
+                this.endpointStateMap.put(epAddress, remoteState);
+                this.liveNodes.add(epAddress);
+            } else {
+                int localGeneration = localState.getGeneration();
+                int remoteGeneration = remoteState.getGeneration();
+                if (remoteGeneration > localGeneration) {
+                    // node restarted so apply everything
+                    this.endpointStateMap.put(epAddress, remoteState);
+                } else if (remoteGeneration == localGeneration) {
+                    long remoteMaxVersion = remoteState.getMaxVersion();
+                    long localMaxVersion = localState.getMaxVersion();
+                    if (remoteMaxVersion > localMaxVersion) {
+                        // apply the new states only
+                        for (Entry<ApplicationState, VersionedValue> remoteEntry : remoteState.getApplicationState()
+                                .entrySet()) {
+                            ApplicationState remoteKey = remoteEntry.getKey();
+                            VersionedValue remoteValue = remoteEntry.getValue();
+
+                            localState.addApplicationState(remoteKey, remoteValue);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
