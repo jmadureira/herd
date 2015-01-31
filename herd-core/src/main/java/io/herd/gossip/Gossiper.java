@@ -1,5 +1,7 @@
 package io.herd.gossip;
 
+import io.herd.base.ServerRuntimeException;
+import io.herd.base.Service;
 import io.herd.concurrent.DefaultThreadFactory;
 
 import java.net.InetSocketAddress;
@@ -14,6 +16,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -24,8 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 
-public class Gossiper {
-
+public class Gossiper implements Service {
+    
     private class GossiperTask implements Runnable {
 
         @Override
@@ -73,7 +76,7 @@ public class Gossiper {
     private static final Logger logger = LoggerFactory.getLogger(Gossiper.class);
 
     // used to randomize the selections of nodes to gossip with
-    final Random random = new Random();
+    private final Random random = new Random();
     
     private final Comparator<InetSocketAddress> inetSocketComparator = new Comparator<InetSocketAddress>() {
 
@@ -83,6 +86,7 @@ public class Gossiper {
         }
     };
 
+    // the map holding the entire information this node has about the remaining nodes on the cluster
     final ConcurrentMap<InetSocketAddress, EndpointState> endpointStateMap = new ConcurrentHashMap<>();
     
     // the list of nodes that are known to be live (including seeds)
@@ -94,23 +98,45 @@ public class Gossiper {
     // the executor used when gossiping with other nodes. The gossip tasks shouldn't be daemon threads btw
     private final ScheduledExecutorService executor = Executors
             .newSingleThreadScheduledExecutor(new DefaultThreadFactory("GossipTask-"));
+    
+    // the executor responsible for dispatching notifications to listeners
+    private final ExecutorService dispatcherService = Executors.newSingleThreadExecutor(new DefaultThreadFactory(
+            "GossipNotificationDispatcher-"));
+
+    // collection of gossip listeners
+    private final ConcurrentSkipListSet<GossipChangeListener> listeners = new ConcurrentSkipListSet<>();
 
     private volatile boolean isRunning = false;
+    private final InetSocketAddress localhost;
 
-    private InetSocketAddress localhost;
-
-    Gossiper() {
-
+    Gossiper(InetSocketAddress localhost) {
+        this.localhost = localhost;
     }
 
     public void addSeedNode(InetSocketAddress address) {
         logger.info("Registering {} as a new seed node", address);
         this.seedNodes.add(address);
     }
+    
+    /**
+     * Adds or updates an {@link ApplicationState} belonging to this node. Calling this method has no effect if the
+     * service isn't running.
+     * 
+     * @param state
+     * @param value
+     * @see #start()
+     */
+    public void addState(ApplicationState state, String value) {
+        if (isRunning()) {
+            EndpointState localState = endpointStateMap.get(this.localhost);
+            localState.addApplicationState(state, new VersionedValue(value));
+        }
+    }
 
     private List<GossipDigest> createGossipDigest() {
 
         List<InetSocketAddress> endpoints = new ArrayList<>(endpointStateMap.keySet());
+        // TODO why I'm I shuffling this anyway?
         Collections.shuffle(endpoints);
 
         return endpoints.stream().map(this::createGossipDigest).collect(Collectors.toList());
@@ -118,6 +144,8 @@ public class Gossiper {
 
     /**
      * Creates a {@link GossipDigest} message with the information this node currently knows about the given endpoint.
+     * If the endpoint is unknown returns a {@link GossipDigest} with generation and version set to 0 which will trigger
+     * a full sync when gossiping.
      */
     private GossipDigest createGossipDigest(InetSocketAddress endpoint) {
         EndpointState epState = endpointStateMap.get(endpoint);
@@ -126,6 +154,7 @@ public class Gossiper {
             long maxVersion = epState.getMaxVersion();
             return new GossipDigest(endpoint, generation, maxVersion);
         }
+        // we do not know this endpoint so we return a dummy digest
         return new GossipDigest(endpoint, 0, 0);
     }
 
@@ -180,21 +209,10 @@ public class Gossiper {
         }
     }
     
-    public void sendDelta(GossipDigest digest, Map<InetSocketAddress, EndpointState> nodeStateMap, long version) {
-        EndpointState state = endpointStateMap.get(digest.endpoint);
-        if (state == null) {
-            return;
-        }
-        EndpointState deltaState = state.copyState(version);
-        if(deltaState != null) {
-            nodeStateMap.put(digest.endpoint, deltaState);
-        }
-    }
-
     public boolean isRunning() {
         return isRunning;
     }
-    
+
     /**
      * Checks if the provided {@link InetSocketAddress} belongs to the list of known seed nodes.
      * 
@@ -204,6 +222,17 @@ public class Gossiper {
      */
     public boolean isSeedNode(InetSocketAddress address) {
         return address != null && seedNodes.contains(address);
+    }
+    
+    public void sendDelta(GossipDigest digest, Map<InetSocketAddress, EndpointState> nodeStateMap, long version) {
+        EndpointState state = endpointStateMap.get(digest.endpoint);
+        if (state == null) {
+            return;
+        }
+        EndpointState deltaState = state.copyState(version);
+        if(deltaState != null) {
+            nodeStateMap.put(digest.endpoint, deltaState);
+        }
     }
 
     private InetSocketAddress sendGossip(GossipDigestSyn message, Set<InetSocketAddress> nodeList) {
@@ -220,39 +249,50 @@ public class Gossiper {
         new GossipClient(this).gossip(message, target);
         return target;
     }
+    
+    private void sendNotification(final Object notification) {
+        this.dispatcherService.execute(() -> {
+            for (GossipChangeListener listener : listeners) {
+                listener.onChange(notification);
+            }
+        }); 
+    }
 
-    public void start(InetSocketAddress localhost) {
-        
-        this.localhost = localhost;
-
-        if (isRunning) {
-            logger.info("Gossiper is already running");
-            return;
-        }
+    public void start() {
         try {
-            start((int) (System.currentTimeMillis() / 1000));
+            if (isRunning()) {
+                logger.info("Gossiper is already running");
+                return;
+            }
+            /*
+             * our generation number is simply the time the service started since it's more than enough to guarantee
+             * that it's different than previous generations
+             */
+            int generationNumber = (int) (System.currentTimeMillis() / 1000);
+            HeartBeatState hbState = new HeartBeatState(generationNumber);
+            EndpointState epState = new EndpointState(hbState);
+
+            endpointStateMap.putIfAbsent(this.localhost, epState);
+
+            this.executor.scheduleWithFixedDelay(new GossiperTask(), 1000, 1000, TimeUnit.MILLISECONDS);
+            isRunning = true;
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            logger.error("Failed to start gossiper", e);
+            throw new ServerRuntimeException(e);
         }
     }
     
-    private void start(int generationNumber) throws Exception {
-
-        HeartBeatState hbState = new HeartBeatState(generationNumber);
-        EndpointState epState = new EndpointState(hbState);
-
-        endpointStateMap.putIfAbsent(this.localhost, epState);
-
-        this.executor.scheduleWithFixedDelay(new GossiperTask(), 1000, 1000, TimeUnit.MILLISECONDS);
-    }
-
     public void stop() {
-        try {
-            executor.shutdown();
-            executor.awaitTermination(3000, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            logger.error("Failed to wait for gossiper to stop.", e);
+        if (isRunning()) {
+            try {
+                executor.shutdown();
+                dispatcherService.shutdown();
+                executor.awaitTermination(3000, TimeUnit.MILLISECONDS);
+                dispatcherService.awaitTermination(3000, TimeUnit.MILLISECONDS);
+                isRunning = false;
+            } catch (InterruptedException e) {
+                logger.error("Failed to wait for gossiper to stop.", e);
+            }
         }
     }
 
@@ -300,4 +340,5 @@ public class Gossiper {
             }
         }
     }
+
 }

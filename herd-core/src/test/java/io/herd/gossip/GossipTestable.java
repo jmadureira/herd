@@ -15,4 +15,12 @@ public interface GossipTestable {
         endpointState.getApplicationState().putAll(applicationStates);
         return endpointState;
     }
+    
+    default void addApplicationState(Map<ApplicationState, VersionedValue> stateMap, ApplicationState state, String value) {
+        stateMap.put(state, new VersionedValue(value));
+    }
+    
+    default void addApplicationState(Map<ApplicationState, VersionedValue> stateMap, ApplicationState state, String value, long version) {
+        stateMap.put(state, new VersionedValue(value, version));
+    }
 }

@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.herd.ServerRuntime;
-import io.herd.ServerRuntimeException;
+import io.herd.base.ServerRuntimeException;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
@@ -51,7 +51,7 @@ class GossipServer implements ServerRuntime {
 
         try {
             this.channel = this.serverBootstrap.bind(port).sync();
-            gossiper.start(new InetSocketAddress(InetAddress.getLocalHost(), port));
+            gossiper.start();
         } catch (Exception e) {
             throw new ServerRuntimeException(e);
         }
