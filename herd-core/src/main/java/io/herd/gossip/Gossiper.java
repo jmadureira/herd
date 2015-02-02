@@ -1,5 +1,6 @@
 package io.herd.gossip;
 
+import io.herd.base.Preconditions;
 import io.herd.base.ServerRuntimeException;
 import io.herd.base.Service;
 import io.herd.concurrent.DefaultThreadFactory;
@@ -16,6 +17,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -104,7 +106,7 @@ public class Gossiper implements Service {
             "GossipNotificationDispatcher-"));
 
     // collection of gossip listeners
-    private final ConcurrentSkipListSet<GossipChangeListener> listeners = new ConcurrentSkipListSet<>();
+    private final List<GossipChangeListener> listeners = new CopyOnWriteArrayList<>();
 
     private volatile boolean isRunning = false;
     private final InetSocketAddress localhost;
@@ -113,23 +115,34 @@ public class Gossiper implements Service {
         this.localhost = localhost;
     }
 
+    /**
+     * Adds a new {@link InetSocketAddress} to the list of known seed nodes.
+     * 
+     * @param address The new seed's {@link InetSocketAddress}.
+     */
     public void addSeedNode(InetSocketAddress address) {
         logger.info("Registering {} as a new seed node", address);
         this.seedNodes.add(address);
+    }
+    
+    public void addChangeListener(GossipChangeListener listener) {
+        listeners.add(Preconditions.checkNotNull(listener, "Cannot register a null listener"));
     }
     
     /**
      * Adds or updates an {@link ApplicationState} belonging to this node. Calling this method has no effect if the
      * service isn't running.
      * 
-     * @param state
-     * @param value
+     * @param state The new {@link ApplicationState} being added/updated on this node
+     * @param value The new value
      * @see #start()
      */
     public void addState(ApplicationState state, String value) {
         if (isRunning()) {
             EndpointState localState = endpointStateMap.get(this.localhost);
-            localState.addApplicationState(state, new VersionedValue(value));
+            VersionedValue vValue = new VersionedValue(value);
+            localState.addApplicationState(state, vValue);
+            notifyNodeChange(this.localhost, state, vValue);
         }
     }
 
@@ -250,10 +263,18 @@ public class Gossiper implements Service {
         return target;
     }
     
-    private void sendNotification(final Object notification) {
+    private void notifyNodeChange(InetSocketAddress address, ApplicationState state, VersionedValue value) {
         this.dispatcherService.execute(() -> {
             for (GossipChangeListener listener : listeners) {
-                listener.onChange(notification);
+                listener.onNodeChange(address, state, value);
+            }
+        }); 
+    }
+    
+    private void notifyNodeAdded(InetSocketAddress address, EndpointState state) {
+        this.dispatcherService.execute(() -> {
+            for (GossipChangeListener listener : listeners) {
+                listener.onNodeAdded(address, state);
             }
         }); 
     }
@@ -317,6 +338,7 @@ public class Gossiper implements Service {
                 // there's no local state which means the node is new so add it
                 this.endpointStateMap.put(epAddress, remoteState);
                 this.liveNodes.add(epAddress);
+                notifyNodeAdded(epAddress, remoteState);
             } else {
                 int localGeneration = localState.getGeneration();
                 int remoteGeneration = remoteState.getGeneration();
