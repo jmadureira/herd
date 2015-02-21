@@ -3,8 +3,14 @@ package io.herd.example;
 import io.herd.http.Http;
 import io.herd.server.Application;
 import io.herd.thrift.Thrift;
+import io.herd.thrift.ThriftModule;
 
 public class ExampleApplication extends Application<ExampleConfiguration> {
+    
+    @Override
+    protected void configureBindings(ExampleConfiguration configuration) {
+        install(new ThriftModule(configuration.getThriftFactory()));
+    }
 
     public static void main(String[] args) {
         new ExampleApplication().run(args);
@@ -16,7 +22,7 @@ public class ExampleApplication extends Application<ExampleConfiguration> {
                 .listen(configuration.getServerFactory().getPort())
                 .serving(new ExampleResource()));
         
-        registerService(new Thrift(configuration.getThriftFactory()));
+        registerService(getResource(Thrift.class));
     }
 
 }

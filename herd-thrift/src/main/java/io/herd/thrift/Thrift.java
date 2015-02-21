@@ -21,7 +21,7 @@ public class Thrift implements Builder<ServerRuntime> {
     private int port = -1;
     private String serviceName;
 
-    public Thrift() {
+    Thrift() {
         this(DEFAULT_NAME, new DefaultThriftConfiguration());
     }
 
@@ -32,7 +32,7 @@ public class Thrift implements Builder<ServerRuntime> {
      * @param configuration The configuration that will be used. If
      *            <code>null<code> is passed it will default to the thrift default configurations.
      */
-    public Thrift(String serviceName, ThriftConfiguration configuration) {
+    Thrift(String serviceName, ThriftConfiguration configuration) {
         this.serviceName = serviceName;
         this.configuration = configuration == null ? new DefaultThriftConfiguration() : configuration;
     }
@@ -44,7 +44,7 @@ public class Thrift implements Builder<ServerRuntime> {
      *            <code>null<code> is passed it will default to the thrift default configurations.
      * @see #Thrift(String, ThriftConfiguration)
      */
-    public Thrift(ThriftConfiguration configuration) {
+    Thrift(ThriftConfiguration configuration) {
         this(DEFAULT_NAME, configuration);
     }
 

@@ -5,18 +5,23 @@ import io.herd.ServerRuntime;
 
 import org.junit.Test;
 
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+
 public class ThriftTest {
 
     @Test
     public void testBuildWithDefaultConfiguration() {
-        Thrift thrift = new Thrift();
+        Injector injector = Guice.createInjector(new ThriftModule());
+        Thrift thrift = injector.getInstance(Thrift.class);
         ServerRuntime serverRuntime = thrift.build();
         assertNotNull(serverRuntime);
     }
     
     @Test
     public void testBuildWithNullConfiguration() {
-        Thrift thrift = new Thrift(null);
+        Injector injector = Guice.createInjector(new ThriftModule(null));
+        Thrift thrift = injector.getInstance(Thrift.class);
         ServerRuntime serverRuntime = thrift.build();
         assertNotNull(serverRuntime);
     }
@@ -25,14 +30,17 @@ public class ThriftTest {
     public void testBuildWithCustomConfiguration() {
         DefaultThriftConfiguration conf = new DefaultThriftConfiguration();
         conf.setPort(8080);
-        Thrift thrift = new Thrift(conf);
+        Injector injector = Guice.createInjector(new ThriftModule(conf));
+        Thrift thrift = injector.getInstance(Thrift.class);
         ServerRuntime serverRuntime = thrift.build();
         assertNotNull(serverRuntime);
     }
     
     @Test
     public void testBuildWithOverrideConfiguration() {
-        Thrift thrift = new Thrift(new DefaultThriftConfiguration()).listen(8080).named("Custom thrift");
+        DefaultThriftConfiguration conf = new DefaultThriftConfiguration();
+        Injector injector = Guice.createInjector(new ThriftModule(conf));
+        Thrift thrift = injector.getInstance(Thrift.class).listen(8080).named("Custom thrift");
         ServerRuntime serverRuntime = thrift.build();
         assertNotNull(serverRuntime);
     }
