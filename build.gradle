@@ -24,6 +24,7 @@ subprojects {
                 javax_validation: 'javax.validation:validation-api:1.1.0.Final',
                 netty: 'io.netty:netty-all:4.0.25.Final',
                 slf4j: 'org.slf4j:slf4j-api:1.7.7',
+                thrift: 'org.apache.thrift:libthrift:0.9.1',
                 
                 //TODO to remove
                 ning_http: 'com.ning:async-http-client:1.8.14',

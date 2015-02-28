@@ -1,8 +1,14 @@
 rootProject.name = "herd"
 include ":goat"
 include ":herd-core"
+include ":herd-example"
+include ":herd-example-gossip"
 include ":herd-http"
+include ":herd-thrift"
 
 project(':goat').projectDir = "$rootDir/goat" as File
 project(':herd-core').projectDir = "$rootDir/herd-core" as File
+project(':herd-example').projectDir = "$rootDir/herd-example" as File
+project(':herd-example-gossip').projectDir = "$rootDir/herd-example-gossip" as File
 project(':herd-http').projectDir = "$rootDir/herd-http" as File
+project(':herd-thrift').projectDir = "$rootDir/herd-thrift" as File
