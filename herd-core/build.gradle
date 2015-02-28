@@ -1,0 +1,17 @@
+description = 'Herd core module'
+
+dependencies {
+    compile libraries.netty,
+            libraries.disruptor,
+            libraries.guava,
+            libraries.guice,
+            libraries.jackson_databind,
+            libraries.jackson_afterburner,
+            libraries.jackson_yaml,
+            libraries.javax_validation,
+            libraries.ning_http,
+            libraries.slf4j
+       
+    testCompile libraries.junit,
+                libraries.mockito
+}

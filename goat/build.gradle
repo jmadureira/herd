@@ -1,0 +1,5 @@
+description = 'Goat Visualiser'
+
+dependencies {
+    compile project(':herd-http')
+}

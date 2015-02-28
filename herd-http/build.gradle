@@ -1,0 +1,5 @@
+description = 'Herd HTTP module'
+
+dependencies {
+    compile project(':herd-core')
+}

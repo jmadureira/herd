@@ -1,0 +1,8 @@
+rootProject.name = "herd"
+include ":goat"
+include ":herd-core"
+include ":herd-http"
+
+project(':goat').projectDir = "$rootDir/goat" as File
+project(':herd-core').projectDir = "$rootDir/herd-core" as File
+project(':herd-http').projectDir = "$rootDir/herd-http" as File
