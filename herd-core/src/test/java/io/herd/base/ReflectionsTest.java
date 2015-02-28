@@ -1,11 +1,8 @@
 package io.herd.base;
 
 import static org.junit.Assert.assertEquals;
-import io.herd.server.Application;
-import io.herd.server.ApplicationTest;
 import io.herd.server.ApplicationTest.TestApplication;
 import io.herd.server.ApplicationTest.TestConfiguration;
-import io.herd.server.Configuration;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;

@@ -1,5 +1,6 @@
-package io.herd.netty;
+package io.herd.base;
 
+import io.herd.base.Streams;
 import io.netty.buffer.ByteBuf;
 
 import java.io.ByteArrayInputStream;

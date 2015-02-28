@@ -46,4 +46,8 @@ public final class Arrays {
         array[j] = temp;
         return array;
     }
+    
+    private Arrays() {
+        
+    }
 }

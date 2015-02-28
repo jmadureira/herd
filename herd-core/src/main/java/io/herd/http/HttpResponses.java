@@ -1,13 +1,13 @@
-package io.herd.netty.http;
+package io.herd.http;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
+import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import io.herd.netty.Streams;
+import io.herd.base.Streams;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 
 import java.io.IOException;
@@ -41,8 +41,7 @@ public final class HttpResponses {
     public static final FullHttpResponse create404Response(HttpVersion protocolVersion) {
         try (InputStream resource = HttpResponses.class.getResourceAsStream(PAGE_404)) {
             ByteBuf buffer404 = Streams.readToByteBuf(resource);
-            FullHttpResponse response = new DefaultFullHttpResponse(protocolVersion, HttpResponseStatus.NOT_FOUND,
-                    buffer404);
+            FullHttpResponse response = new DefaultFullHttpResponse(protocolVersion, NOT_FOUND, buffer404);
 
             response.headers().add(CONTENT_TYPE, DEFAULT_CONTENT_TYPE);
             response.headers().add(CONTENT_LENGTH, response.content().readableBytes());
