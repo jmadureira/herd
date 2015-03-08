@@ -4,6 +4,7 @@ subprojects {
     apply plugin: 'eclipse'
 
     repositories {
+       mavenLocal()
        mavenCentral()
     }
 
@@ -23,8 +24,13 @@ subprojects {
                 jackson_yaml: 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.3.2',
                 javax_validation: 'javax.validation:validation-api:1.1.0.Final',
                 netty: 'io.netty:netty-all:4.0.25.Final',
-                slf4j: 'org.slf4j:slf4j-api:1.7.7',
                 thrift: 'org.apache.thrift:libthrift:0.9.1',
+                // Logging stuff
+                slf4j: 'org.slf4j:slf4j-api:1.7.7',
+                log4j_slf4j: 'org.apache.logging.log4j:log4j-slf4j-impl:2.0.2',
+                log4j: 'org.apache.logging.log4j:log4j-core:2.0.2',
+                // scala stuff
+                scala: 'org.scala-lang:scala-library:2.11.4',
                 
                 //TODO to remove
                 ning_http: 'com.ning:async-http-client:1.8.14',

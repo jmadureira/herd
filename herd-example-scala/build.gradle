@@ -1,0 +1,8 @@
+description = 'Herd Gossip Scala example application'
+
+apply plugin: 'scala'
+
+dependencies {
+    compile project(':herd-thrift'),
+            libraries.scala
+}
