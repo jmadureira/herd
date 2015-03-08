@@ -1,0 +1,7 @@
+description = 'Herd Scala module'
+
+apply plugin: 'scala'
+
+dependencies {
+    compile libraries.scala
+}
