@@ -1,9 +1,9 @@
 package io.herd.example.scala
 
+import io.herd.scala.interop._
 import io.herd.server.Application
 import io.herd.thrift.Thrift
 import io.herd.thrift.ThriftModule
-import javax.inject.Inject
 
 trait ScalaExampleApplication extends Application[ScalaExampleConfiguration] {
 }
