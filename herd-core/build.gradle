@@ -10,7 +10,10 @@ dependencies {
             libraries.jackson_yaml,
             libraries.javax_validation,
             libraries.ning_http,
-            libraries.slf4j
+            libraries.slf4j,
+            libraries.log4j,
+            libraries.log4j_slf4j
+            
        
     testCompile libraries.junit,
                 libraries.mockito
