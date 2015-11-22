@@ -16,8 +16,6 @@ public class GossipMessageDecoder extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
 
-        logger.debug("Decoding gossip message.");
-
         if (in.readableBytes() < 5) {
             return;
         }

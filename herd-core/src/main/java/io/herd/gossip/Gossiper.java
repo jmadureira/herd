@@ -1,6 +1,6 @@
 package io.herd.gossip;
 
-import io.herd.base.Preconditions;
+import static io.herd.base.Preconditions.checkNotNull;
 import io.herd.base.ServerRuntimeException;
 import io.herd.base.Service;
 import io.herd.concurrent.DefaultThreadFactory;
@@ -30,67 +30,19 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableList;
 
 public class Gossiper implements Service {
-    
-    private class GossiperTask implements Runnable {
-
-        @Override
-        public void run() {
-            logger.debug("Starting gossip round");
-            try {
-                logger.debug("My heartbeat is now {}", endpointStateMap.get(localhost).getHeartBeatState().version);
-
-                final List<GossipDigest> digestList = createGossipDigest();
-
-                /*
-                 * It highly unlikely to have an empty list of digests. At least we will send our own state.
-                 */
-                if (!digestList.isEmpty()) {
-                    GossipDigestSyn synMessage = new GossipDigestSyn(digestList);
-
-                    // gossip with some live node first
-                    InetSocketAddress targetNode = sendGossip(synMessage, liveNodes);
-
-                    // TODO gossip to some unreachable node just in case he is back up
-
-                    /*
-                     * Gossip to a seed node if we haven't done so already or if we haven't seen all seeds. This
-                     * prevents partitions where each group of nodes is gossiping to a subset of seeds. To avoid
-                     * checking all seeds we reason that: if there's only one node on the cluster (which would be us)
-                     * then we're talking to ourselves (which we don't by the way); if there are only seed nodes we will
-                     * continue to talk to each other until we all have information about all of us. New non seed nodes
-                     * will introduce themselves to a seed node initially so no problem there. If there's already one or
-                     * more non-seed nodes eventually someone will gossip to it the gossip to one of the seeds. See
-                     * CASSANDRA-150 for a better explanation.
-                     */
-                    if (isSeedNode(targetNode) || liveNodes.size() < seedNodes.size()) {
-                        sendGossip(synMessage, seedNodes);
-                    }
-
-                }
-            } catch (Exception e) {
-                logger.error("Gossip round failed", e);
-            }
-
-        }
-
-    }
 
     private static final Logger logger = LoggerFactory.getLogger(Gossiper.class);
 
     // used to randomize the selections of nodes to gossip with
     private final Random random = new Random();
-    
-    private final Comparator<InetSocketAddress> inetSocketComparator = new Comparator<InetSocketAddress>() {
 
-        @Override
-        public int compare(InetSocketAddress o1, InetSocketAddress o2) {
-            return o1.getAddress().getHostAddress().compareTo(o2.getAddress().getHostAddress());
-        }
+    private final Comparator<InetSocketAddress> inetSocketComparator = (o1, o2) -> {
+        return o1.getAddress().getHostAddress().compareTo(o2.getAddress().getHostAddress());
     };
 
     // the map holding the entire information this node has about the remaining nodes on the cluster
     final ConcurrentMap<InetSocketAddress, EndpointState> endpointStateMap = new ConcurrentHashMap<>();
-    
+
     // the list of nodes that are known to be live (including seeds)
     final ConcurrentSkipListSet<InetSocketAddress> liveNodes = new ConcurrentSkipListSet<>(inetSocketComparator);
 
@@ -100,7 +52,7 @@ public class Gossiper implements Service {
     // the executor used when gossiping with other nodes. The gossip tasks shouldn't be daemon threads btw
     private final ScheduledExecutorService executor = Executors
             .newSingleThreadScheduledExecutor(new DefaultThreadFactory("GossipTask-"));
-    
+
     // the executor responsible for dispatching notifications to listeners
     private final ExecutorService dispatcherService = Executors.newSingleThreadExecutor(new DefaultThreadFactory(
             "GossipNotificationDispatcher-"));
@@ -124,11 +76,11 @@ public class Gossiper implements Service {
         logger.info("Registering {} as a new seed node", address);
         this.seedNodes.add(address);
     }
-    
+
     public void addChangeListener(GossipChangeListener listener) {
-        listeners.add(Preconditions.checkNotNull(listener, "Cannot register a null listener"));
+        listeners.add(checkNotNull(listener, "Cannot register a null listener"));
     }
-    
+
     /**
      * Adds or updates an {@link ApplicationState} belonging to this node. Calling this method has no effect if the
      * service isn't running.
@@ -221,7 +173,7 @@ public class Gossiper implements Service {
             }
         }
     }
-    
+
     public boolean isRunning() {
         return isRunning;
     }
@@ -236,14 +188,14 @@ public class Gossiper implements Service {
     public boolean isSeedNode(InetSocketAddress address) {
         return address != null && seedNodes.contains(address);
     }
-    
+
     public void sendDelta(GossipDigest digest, Map<InetSocketAddress, EndpointState> nodeStateMap, long version) {
         EndpointState state = endpointStateMap.get(digest.endpoint);
         if (state == null) {
             return;
         }
         EndpointState deltaState = state.copyState(version);
-        if(deltaState != null) {
+        if (deltaState != null) {
             nodeStateMap.put(digest.endpoint, deltaState);
         }
     }
@@ -262,21 +214,21 @@ public class Gossiper implements Service {
         new GossipClient(this).gossip(message, target);
         return target;
     }
-    
+
     private void notifyNodeChange(InetSocketAddress address, ApplicationState state, VersionedValue value) {
         this.dispatcherService.execute(() -> {
             for (GossipChangeListener listener : listeners) {
                 listener.onNodeChange(address, state, value);
             }
-        }); 
+        });
     }
-    
+
     private void notifyNodeAdded(InetSocketAddress address, EndpointState state) {
         this.dispatcherService.execute(() -> {
             for (GossipChangeListener listener : listeners) {
                 listener.onNodeAdded(address, state);
             }
-        }); 
+        });
     }
 
     public void start() {
@@ -295,14 +247,50 @@ public class Gossiper implements Service {
 
             endpointStateMap.putIfAbsent(this.localhost, epState);
 
-            this.executor.scheduleWithFixedDelay(new GossiperTask(), 1000, 1000, TimeUnit.MILLISECONDS);
+            this.executor.scheduleWithFixedDelay(() -> {
+                logger.debug("Starting gossip round");
+                try {
+                    logger.debug("My heartbeat is now {}", endpointStateMap.get(localhost).getHeartBeatState().version);
+
+                    final List<GossipDigest> digestList = createGossipDigest();
+
+                    /*
+                     * It highly unlikely to have an empty list of digests. At least we will send our own state.
+                     */
+                    if (!digestList.isEmpty()) {
+                        GossipDigestSyn synMessage = new GossipDigestSyn(digestList);
+
+                        // gossip with some live node first
+                        InetSocketAddress targetNode = sendGossip(synMessage, liveNodes);
+
+                        // TODO gossip to some unreachable node just in case he is back up
+
+                        /*
+                         * Gossip to a seed node if we haven't done so already or if we haven't seen all seeds. This
+                         * prevents partitions where each group of nodes is gossiping to a subset of seeds. To avoid
+                         * checking all seeds we reason that: if there's only one node on the cluster (which would be us)
+                         * then we're talking to ourselves (which we don't by the way); if there are only seed nodes we will
+                         * continue to talk to each other until we all have information about all of us. New non seed nodes
+                         * will introduce themselves to a seed node initially so no problem there. If there's already one or
+                         * more non-seed nodes eventually someone will gossip to it the gossip to one of the seeds. See
+                         * CASSANDRA-150 for a better explanation.
+                         */
+                        if (isSeedNode(targetNode) || liveNodes.size() < seedNodes.size()) {
+                            sendGossip(synMessage, seedNodes);
+                        }
+
+                    }
+                } catch (Exception e) {
+                    logger.error("Gossip round failed", e);
+                }
+            }, 1000, 1000, TimeUnit.MILLISECONDS);
             isRunning = true;
         } catch (Exception e) {
             logger.error("Failed to start gossiper", e);
             throw new ServerRuntimeException(e);
         }
     }
-    
+
     public void stop() {
         if (isRunning()) {
             try {

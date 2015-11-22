@@ -12,9 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class GossipDigestAck {
 
     static final GossipDigestAckSerializer serializer = new GossipDigestAckSerializer();
@@ -37,18 +34,13 @@ public class GossipDigestAck {
 
     @Override
     public String toString() {
-        return new StringBuilder("GossipDigestAck: ")
-                .append(digests)
-                .append(nodeStateMap)
-                .toString();
+        return "{digests: " + digests + ", nodeStateMap: " + nodeStateMap + "}";
     }
 
 }
 
 final class GossipDigestAckSerializer implements ISerializer<GossipDigestAck> {
     
-    private static final Logger logger = LoggerFactory.getLogger(GossipDigestAckSerializer.class);
-
     @Override
     public void serialize(ChannelHandlerContext ctx, GossipDigestAck t, ByteBuf out) {
         out.writeByte((byte) 'A');
@@ -69,7 +61,6 @@ final class GossipDigestAckSerializer implements ISerializer<GossipDigestAck> {
 
         int payloadSize = in.readInt();
         if (in.readableBytes() < payloadSize) {
-            logger.debug("Not enough bytes yet. Expected {} but still has {}", payloadSize, in.readableBytes());
             return null;
         }
         int length = in.readInt();
@@ -85,7 +76,7 @@ final class GossipDigestAckSerializer implements ISerializer<GossipDigestAck> {
                 EndpointState state = EndpointState.serializer.deserialize(ctx, in);
                 nodeStateMap.put(endpoint, state);
             } catch (Exception e) {
-                throw new CorruptedFrameException("Unable to read node state due to " + e.toString());
+                throw new CorruptedFrameException("Unable to read node state", e);
             }
         }
         return new GossipDigestAck(digests, nodeStateMap);
@@ -111,13 +102,8 @@ final class GossipDigestAckSerializer implements ISerializer<GossipDigestAck> {
 
 final class GossipDigestAckEncoder extends MessageToByteEncoder<GossipDigestAck> {
 
-    private static final Logger logger = LoggerFactory.getLogger(GossipDigestAckEncoder.class);
-
     @Override
     protected void encode(ChannelHandlerContext ctx, GossipDigestAck msg, ByteBuf out) throws Exception {
-
-        logger.debug("Encoding {}", msg);
-
         GossipDigestAck.serializer.serialize(ctx, msg, out);
     }
     

@@ -40,7 +40,7 @@ public class VersionedValue implements Comparable<VersionedValue> {
 
     @Override
     public String toString() {
-        return "{value=" + value + ", version=" + version + "}";
+        return "{value:" + value + ", version:" + version + "}";
     }
 
 }

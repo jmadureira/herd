@@ -1,8 +1,5 @@
 package io.herd.gossip;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +38,9 @@ class GossipServer implements ServerRuntime {
 
     @Override
     public void start() {
+        if (isRunning()) {
+            return;
+        }
         this.bossGroup = new NioEventLoopGroup();
         this.workerGroup = new NioEventLoopGroup();
         this.serverBootstrap = new ServerBootstrap();
@@ -64,9 +64,9 @@ class GossipServer implements ServerRuntime {
     public void stop() {
         try {
             logger.info("Shutting down server {}...", serverName);
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
             this.channel.channel().closeFuture().sync();
+            bossGroup.shutdownGracefully().sync();
+            workerGroup.shutdownGracefully().sync();
             gossiper.stop();
             isRunning = false;
         } catch (Exception e) {

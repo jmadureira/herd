@@ -10,9 +10,6 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class GossipDigestAck2 {
 
     public static final GossipDigestAck2Serializer serializer = new GossipDigestAck2Serializer();
@@ -22,16 +19,14 @@ public class GossipDigestAck2 {
     GossipDigestAck2(Map<InetSocketAddress, EndpointState> nodeStateMap) {
         this.nodeStateMap = nodeStateMap;
     }
-    
+
     Map<InetSocketAddress, EndpointState> getEndpointStates() {
         return nodeStateMap;
     }
-    
+
     @Override
     public String toString() {
-        return new StringBuilder("GossipDigestAck2: ")
-                .append(nodeStateMap)
-                .toString();
+        return "{nodeStateMap: " + nodeStateMap + "}";
     }
 }
 
@@ -64,7 +59,7 @@ final class GossipDigestAck2Serializer implements ISerializer<GossipDigestAck2> 
                 EndpointState state = EndpointState.serializer.deserialize(ctx, in);
                 nodeStateMap.put(endpoint, state);
             } catch (Exception e) {
-                throw new CorruptedFrameException("Unable to read node state due to " + e.toString());
+                throw new CorruptedFrameException("Unable to read node state", e);
             }
         }
         return new GossipDigestAck2(nodeStateMap);
@@ -85,13 +80,8 @@ final class GossipDigestAck2Serializer implements ISerializer<GossipDigestAck2> 
 
 final class GossipDigestAck2Encoder extends MessageToByteEncoder<GossipDigestAck2> {
 
-    private static final Logger logger = LoggerFactory.getLogger(GossipDigestAck2Encoder.class);
-
     @Override
     protected void encode(ChannelHandlerContext ctx, GossipDigestAck2 msg, ByteBuf out) throws Exception {
-
-        logger.debug("Encoding {}", msg);
-
         GossipDigestAck2.serializer.serialize(ctx, msg, out);
     }
 

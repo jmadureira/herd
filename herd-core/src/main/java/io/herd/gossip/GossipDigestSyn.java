@@ -7,13 +7,8 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * First message that gets sent out at the start of a gossip protocol round.
- * 
- * @author joaomadureira
  * 
  */
 public class GossipDigestSyn {
@@ -32,11 +27,9 @@ public class GossipDigestSyn {
 
     @Override
     public String toString() {
-        return new StringBuilder("GossipDigestSyn:")
-                .append(digests)
-                .toString();
+        return "{digests: " + digests + "}";
     }
-    
+
 }
 
 final class GossipDigestSynSerializer implements ISerializer<GossipDigestSyn> {
@@ -81,13 +74,8 @@ final class GossipDigestSynSerializer implements ISerializer<GossipDigestSyn> {
 
 final class GossipDigestSynEncoder extends MessageToByteEncoder<GossipDigestSyn> {
 
-    private static final Logger logger = LoggerFactory.getLogger(GossipDigestSynEncoder.class);
-
     @Override
     protected void encode(ChannelHandlerContext ctx, GossipDigestSyn msg, ByteBuf out) throws Exception {
-        
-        logger.debug("Encoding {}", msg);
-
         GossipDigestSyn.serializer.serialize(ctx, msg, out);
     }
 

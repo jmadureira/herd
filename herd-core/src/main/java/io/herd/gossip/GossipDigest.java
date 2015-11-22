@@ -1,15 +1,12 @@
 package io.herd.gossip;
 
-import static io.herd.base.Sizes.*;
+import static io.herd.base.Sizes.sizeOf;
+
+import java.net.InetSocketAddress;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.Objects;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.netty.handler.codec.CorruptedFrameException;
 
 /**
  * A {@link GossipDigest} holds the largest version of the state from a given endpoint know by the local endpoint.
@@ -42,43 +39,37 @@ class GossipDigest implements Comparable<GossipDigest> {
          */
         return (int) (maxVersion - gDigest.maxVersion);
     }
-    
+
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof GossipDigest)) {
             return false;
         }
-        
+
         if (this == obj) {
             return true;
         }
 
         GossipDigest other = (GossipDigest) obj;
-        return this.generation == other.generation
-                && this.maxVersion == other.maxVersion
+        return this.generation == other.generation && this.maxVersion == other.maxVersion
                 && this.endpoint.equals(other.endpoint);
     }
-    
+
     @Override
     public int hashCode() {
-        return Objects.hash(endpoint, generation, maxVersion);
+        int result = 31 * (endpoint == null ? 0 : endpoint.hashCode());
+        result = 31 * result + generation;
+        result = 31 * result + Long.hashCode(maxVersion);
+        return result;
     }
 
     public String toString() {
-        return new StringBuilder()
-                .append(endpoint)
-                .append(':')
-                .append(generation)
-                .append(':')
-                .append(maxVersion)
-                .toString();
+        return endpoint + ":" + generation + ":" + maxVersion;
     }
 
 }
 
 final class GossipDigestSerializer implements ISerializer<GossipDigest> {
-
-    private static final Logger logger = LoggerFactory.getLogger(GossipDigestSerializer.class);
 
     @Override
     public void serialize(ChannelHandlerContext ctx, GossipDigest digest, ByteBuf out) {
@@ -90,17 +81,12 @@ final class GossipDigestSerializer implements ISerializer<GossipDigest> {
     @Override
     public GossipDigest deserialize(ChannelHandlerContext ctx, ByteBuf in) {
         try {
-            int port = in.readShort();
-            int addressLength = in.readByte();
-            byte[] addressArray = new byte[addressLength];
-            in.readBytes(addressArray);
-            InetAddress endpoint = InetAddress.getByAddress(addressArray);
+            InetSocketAddress endpoint = deserializeSocketAddress(in);
             int generation = in.readInt();
             long maxVersion = in.readLong();
-            return new GossipDigest(new InetSocketAddress(endpoint, port), generation, maxVersion);
+            return new GossipDigest(endpoint, generation, maxVersion);
         } catch (Exception e) {
-            logger.error("Failed to deserialize GossipDigest due to {}.", e.toString());
-            return null;
+            throw new CorruptedFrameException("Failed to deserialize GossipDigest", e);
         }
     }
 

@@ -10,7 +10,6 @@ import io.netty.channel.ChannelHandlerContext;
 /**
  * Interface definition for implementations capable of serializing/deserializing objects of type <code>T</code>
  * into/from {@link ByteBuf}s.
- *
  * 
  * @param <T> The type of objects that are going to be serialized/deserialized.
  */
@@ -32,12 +31,6 @@ interface ISerializer<T> {
         buf.readBytes(addressArray);
         return InetAddress.getByAddress(addressArray);
     }
-    
-    default String deserializeString(ByteBuf buf) {
-        byte[] bytes = new byte[buf.readInt()];
-        buf.readBytes(bytes);
-        return new String(bytes);
-    }
 
     /**
      * Reads an {@link InetSocketAddress} from a {@link ByteBuf}. No boundary checks are made here.
@@ -48,8 +41,13 @@ interface ISerializer<T> {
      *             {@link ByteBuf}
      */
     default InetSocketAddress deserializeSocketAddress(ByteBuf buf) throws IOException {
-        int port = buf.readShort();
-        return new InetSocketAddress(deserializeAddress(buf), port);
+        return new InetSocketAddress(deserializeAddress(buf), buf.readShort());
+    }
+
+    default String deserializeString(ByteBuf buf) {
+        byte[] bytes = new byte[buf.readInt()];
+        buf.readBytes(bytes);
+        return new String(bytes);
     }
 
     /**
@@ -64,14 +62,14 @@ interface ISerializer<T> {
         buf.writeByte(array.length);
         buf.writeBytes(array);
     }
-    
+
+    default void serialize(InetSocketAddress address, ByteBuf buf) {
+        serialize(address.getAddress(), buf);
+        buf.writeShort(address.getPort());
+    }
+
     default void serialize(String string, ByteBuf buf) {
         buf.writeInt(string.length());
         buf.writeBytes(string.getBytes());
-    }
-
-    default void serialize(InetSocketAddress address, ByteBuf buf) {
-        buf.writeShort(address.getPort());
-        serialize(address.getAddress(), buf);
     }
 }
