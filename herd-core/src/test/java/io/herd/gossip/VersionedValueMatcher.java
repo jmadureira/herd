@@ -1,5 +1,6 @@
 package io.herd.gossip;
-import static org.mockito.Mockito.*;
+import static org.mockito.Matchers.argThat;
+
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 

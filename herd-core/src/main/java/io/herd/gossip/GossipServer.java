@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.herd.ServerRuntime;
+import io.herd.base.Interwebs;
 import io.herd.base.ServerRuntimeException;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -32,7 +33,7 @@ class GossipServer implements ServerRuntime {
 
     public GossipServer(String serverName, int port, Gossiper gossiper) {
         this.serverName = serverName;
-        this.port = port;
+        this.port = port == 0 ? Interwebs.findFreePort() : port;
         this.gossiper = gossiper;
     }
 
@@ -64,9 +65,9 @@ class GossipServer implements ServerRuntime {
     public void stop() {
         try {
             logger.info("Shutting down server {}...", serverName);
-            this.channel.channel().closeFuture().sync();
             bossGroup.shutdownGracefully().sync();
             workerGroup.shutdownGracefully().sync();
+            this.channel.channel().closeFuture().sync();
             gossiper.stop();
             isRunning = false;
         } catch (Exception e) {

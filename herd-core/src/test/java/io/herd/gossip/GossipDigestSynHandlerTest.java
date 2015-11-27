@@ -45,7 +45,7 @@ public class GossipDigestSynHandlerTest implements GossipTestable {
         this.gossiper = new Gossiper(localhost);
         this.gossiper.start();
         this.sc = new EmbeddedChannel(new GossipDigestSynHandler(gossiper));
-        this.nodeAddress = new InetSocketAddress(InetAddress.getByName("www.google.com"), 8080);
+        this.nodeAddress = new InetSocketAddress(InetAddress.getLocalHost(), 8081);
     }
 
     @Test

@@ -1,16 +1,11 @@
 package io.herd.gossip;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 
 class GossipServerInitializer extends ChannelInitializer<Channel> {
 
-    private static final Logger logger = LoggerFactory.getLogger(GossipServerInitializer.class);
-    
     private final Gossiper gossiper;
 
     public GossipServerInitializer(Gossiper gossiper) {
@@ -19,9 +14,6 @@ class GossipServerInitializer extends ChannelInitializer<Channel> {
 
     @Override
     protected void initChannel(Channel ch) throws Exception {
-
-        logger.debug("Initializing gossip server channel");
-
         ChannelPipeline pipeline = ch.pipeline();
 
         pipeline.addLast("synDecoder", new GossipMessageDecoder());

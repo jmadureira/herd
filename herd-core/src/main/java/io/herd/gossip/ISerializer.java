@@ -41,7 +41,7 @@ interface ISerializer<T> {
      *             {@link ByteBuf}
      */
     default InetSocketAddress deserializeSocketAddress(ByteBuf buf) throws IOException {
-        return new InetSocketAddress(deserializeAddress(buf), buf.readShort());
+        return new InetSocketAddress(deserializeAddress(buf), buf.readUnsignedShort());
     }
 
     default String deserializeString(ByteBuf buf) {

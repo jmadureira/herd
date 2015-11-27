@@ -1,8 +1,10 @@
 package io.herd.base;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.ServerSocket;
 
 /**
  * Utility class to work with da interwebs. Networks and stuff.
@@ -10,11 +12,48 @@ import java.net.NetworkInterface;
  */
 public final class Interwebs {
 
-    private Interwebs() {
-
+    /**
+     * Returns a random port number that isn't being used at the moment by any process.
+     * 
+     * @return A free port
+     * @throws IllegalStateException if no free port was found
+     * @see ServerSocket
+     */
+    public static int findFreePort() {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            socket.setReuseAddress(true);
+            return socket.getLocalPort();
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to find a free port", e);
+        }
+    }
+    
+    public static boolean isLocalHost(InetAddress address) {
+        try {
+            // quick check if the address is any valid local address or a loopback address
+            if (address.isAnyLocalAddress() || address.isLoopbackAddress()) {
+                return true;
+            }
+            // check if the address belong to any network interface
+            return NetworkInterface.getByInetAddress(address) != null;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unable to determine localhost address", e);
+        }
     }
 
-    public static final InetAddress toInetAddress(String address) {
+    public static boolean isLocalHost(InetSocketAddress address) {
+        return isLocalHost(address.getAddress());
+    }
+
+    public static boolean isNotLocalHost(InetAddress address) {
+        return !isLocalHost(address);
+    }
+
+    public static boolean isNotLocalHost(InetSocketAddress address) {
+        return !isLocalHost(address);
+    }
+
+    public static InetAddress toInetAddress(String address) {
         try {
             return InetAddress.getByName(address);
         } catch (Exception e) {
@@ -34,7 +73,7 @@ public final class Interwebs {
      * @return An {@link InetSocketAddress} resolved from the provided address.
      * @throws IllegalArgumentException if the address is invalid for some reason.
      */
-    public static final InetSocketAddress toSocketAddress(String address) {
+    public static InetSocketAddress toSocketAddress(String address) {
         Preconditions.checkNotEmpty(address, "Cannot create an InetSocketAddress from an empty string.");
         int index = address.indexOf(":");
         Preconditions.checkPositive(index, "Address must include a port number");
@@ -47,28 +86,7 @@ public final class Interwebs {
         }
     }
 
-    public static final boolean isLocalHost(InetSocketAddress address) {
-        return isLocalHost(address.getAddress());
-    }
+    private Interwebs() {
 
-    public static final boolean isLocalHost(InetAddress address) {
-        try {
-            // quick check if the address is any valid local address or a loopback address
-            if (address.isAnyLocalAddress() || address.isLoopbackAddress()) {
-                return true;
-            }
-            // check if the address belong to any network interface
-            return NetworkInterface.getByInetAddress(address) != null;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Unable to determine localhost address", e);
-        }
-    }
-
-    public static final boolean isNotLocalHost(InetAddress address) {
-        return !isLocalHost(address);
-    }
-
-    public static final boolean isNotLocalHost(InetSocketAddress address) {
-        return !isLocalHost(address);
     }
 }

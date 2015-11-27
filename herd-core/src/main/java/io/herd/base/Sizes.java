@@ -32,18 +32,6 @@ public final class Sizes {
             return 16;
         }
     }
-    
-    /**
-     * Returns the size of a {@link String} in bytes. The size will be equal to the size of an <code>int</code> value
-     * corresponding to the length value plus the length of the string itself.
-     * 
-     * @param string a valid string.
-     * @return {@link Integer#BYTES} plus the length of the string.
-     */
-    public static final int sizeOf(String string) {
-        int length = string.length();
-        return sizeOf(length) + length;
-    }
 
     /**
      * Returns the size of an {@link InetSocketAddress} in bytes whic will be equal to the size of the
@@ -84,5 +72,17 @@ public final class Sizes {
      */
     public static final int sizeOf(short i) {
         return Short.BYTES;
+    }
+
+    /**
+     * Returns the size of a {@link String} in bytes. The size will be equal to the size of an <code>int</code> value
+     * corresponding to the length value plus the length of the string itself.
+     * 
+     * @param string a valid string.
+     * @return {@link Integer#BYTES} plus the length of the string.
+     */
+    public static final int sizeOf(String string) {
+        int length = string.length();
+        return sizeOf(length) + length;
     }
 }

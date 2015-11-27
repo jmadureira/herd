@@ -3,6 +3,7 @@ package io.herd.gossip;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import io.herd.ServerRuntime;
+import io.herd.base.Interwebs;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -18,70 +19,66 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class GossipTest implements GossipTestable {
-    
-    private static final int DEFAULT_PORT = 8080;
-    
+
     private ServerRuntime runtime;
     private DefaultGossipConfiguration configuration;
 
     private InetSocketAddress nodeAddress;
     private InetSocketAddress localhost;
 
-    
     @Before
     public void setUp() throws Exception {
-        this.localhost = new InetSocketAddress(InetAddress.getLocalHost(), 8080);
+        int port = Interwebs.findFreePort();
+        this.localhost = new InetSocketAddress(InetAddress.getLocalHost(), port);
         Set<String> seedNodes = new HashSet<>();
-        seedNodes.add("127.0.0.1:8080");
+        seedNodes.add("127.0.0.1:" + port);
         this.configuration = new DefaultGossipConfiguration();
-        configuration.setPort(DEFAULT_PORT);
+        configuration.setPort(port);
         configuration.setSeedNodes(seedNodes);
-        this.nodeAddress = new InetSocketAddress("173.194.66.147", 8080);
+        this.runtime = new Gossip(configuration).build();
+        runtime.start();
+        this.nodeAddress = new InetSocketAddress("127.0.0.1", Interwebs.findFreePort());
     }
-    
+
     @After
     public void tearDown() {
-        if(runtime != null) {
+        if (runtime != null) {
             runtime.stop();
         }
     }
-    
+
     @Test
-    public void testGossipRoundService() {
-        
+    public void testGossipRoundService() throws Exception {
+
         int generation = (int) (System.currentTimeMillis() / 1000);
         long maxVersion = System.currentTimeMillis();
         Map<ApplicationState, VersionedValue> states = new HashMap<>();
         addApplicationState(states, ApplicationState.SERVICE_NAME, "someService", maxVersion);
         Gossiper gossiper = new Gossiper(localhost);
-        
+
         gossiper.liveNodes.add(nodeAddress);
         gossiper.endpointStateMap.put(nodeAddress, createEndpointState(generation, states));
-        
-        this.runtime = new Gossip(configuration).build();
-        
-        runtime.start();
-        
+
         GossipClient client = new GossipClient(gossiper);
-        
+
         // first send our current state with the new node
         List<GossipDigest> digests = new ArrayList<>();
         digests.add(new GossipDigest(nodeAddress, generation, maxVersion));
         GossipDigestSyn message = new GossipDigestSyn(digests);
-        
-        client.gossip(message, new InetSocketAddress("127.0.0.1", DEFAULT_PORT));
-        
+
+        client.gossip(message, new InetSocketAddress(InetAddress.getLocalHost(), this.localhost.getPort()));
+
         // then downgrade our state
         // the gossip round should restore our state
         gossiper.endpointStateMap.remove(nodeAddress);
         assertFalse(gossiper.endpointStateMap.containsKey(nodeAddress));
-        
+
         digests = new ArrayList<>();
         digests.add(new GossipDigest(nodeAddress, generation, 0));
         message = new GossipDigestSyn(digests);
-        
-        client.gossip(message, new InetSocketAddress("127.0.0.1", DEFAULT_PORT));
-        
+
+        client.gossip(message, new InetSocketAddress(InetAddress.getLocalHost(), this.localhost.getPort()));
+
         assertTrue(gossiper.endpointStateMap.containsKey(nodeAddress));
     }
 }
