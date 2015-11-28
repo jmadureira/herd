@@ -9,4 +9,5 @@ pom.xml.next
 release.properties
 test-output
 .vagrant
-/build/
+build
+bin
