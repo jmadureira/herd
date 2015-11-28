@@ -8,6 +8,7 @@ import io.herd.monitoring.Emitter;
 import io.herd.monitoring.Event;
 import io.herd.monitoring.Timed;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,8 +18,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SchedulerBuilder {
 
@@ -32,7 +33,7 @@ public class SchedulerBuilder {
         }
     }
 
-    private static final Logger logger = LogManager.getLogger(SchedulerBuilder.class);
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     public static final int DEFAULT_POOL_SIZE = 2;
 

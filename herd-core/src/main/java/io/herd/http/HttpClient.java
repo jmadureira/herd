@@ -6,4 +6,6 @@ public interface HttpClient {
 
     BoundRequestBuilder prepareGet(String url);
 
+    BoundRequestBuilder preparePost(String url);
+
 }

@@ -1,14 +1,17 @@
 package io.herd.http;
 
-import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import io.herd.base.Streams;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.util.CharsetUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,12 +24,20 @@ import java.io.InputStream;
  */
 public final class HttpResponses {
 
-    private static final String DEFAULT_CONTENT_TYPE = "text/html; charset=UTF-8";
+    private static final String HTML_CONTENT_TYPE = "text/html; charset=UTF-8";
+    private static final String TEXT_CONTENT_TYPE = "text/plain; charset=UTF-8";
 
     private static final String PAGE_404 = "/errorpages/404.html";
 
     private HttpResponses() {
 
+    }
+    
+    public static final FullHttpResponse createErrorResponse(HttpResponseStatus status) {
+        FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, status, Unpooled.copiedBuffer("Failure: " + status, CharsetUtil.UTF_8));
+        response.headers().set(CONTENT_TYPE, TEXT_CONTENT_TYPE);
+        
+        return response;
     }
 
     /**
@@ -43,8 +54,8 @@ public final class HttpResponses {
             ByteBuf buffer404 = Streams.readToByteBuf(resource);
             FullHttpResponse response = new DefaultFullHttpResponse(protocolVersion, NOT_FOUND, buffer404);
 
-            response.headers().add(CONTENT_TYPE, DEFAULT_CONTENT_TYPE);
-            response.headers().add(CONTENT_LENGTH, response.content().readableBytes());
+            response.headers().add(CONTENT_TYPE, HTML_CONTENT_TYPE);
+            HttpHeaders.setContentLength(response, response.content().readableBytes());
             return response;
         } catch (IOException e) {
             e.printStackTrace();

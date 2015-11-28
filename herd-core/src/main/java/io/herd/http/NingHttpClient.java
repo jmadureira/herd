@@ -33,4 +33,9 @@ public class NingHttpClient implements HttpClient, Service {
         return delegate.prepareGet(url);
     }
 
+    @Override
+    public BoundRequestBuilder preparePost(String url) {
+        return delegate.preparePost(url);
+    }
+
 }

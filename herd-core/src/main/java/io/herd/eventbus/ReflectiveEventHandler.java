@@ -34,7 +34,7 @@ public class ReflectiveEventHandler implements EventHandler<Envelope> {
     @Override
     public void onEvent(Envelope event, long sequence, boolean endOfBatch) throws Exception {
         Object data = event.getData();
-        logger.info("Received event {}", data);
+//        logger.info("Received event {}", data);
         if (messageType.isInstance(data)) {
             try {
                 handle.invoke(subscriber, data);

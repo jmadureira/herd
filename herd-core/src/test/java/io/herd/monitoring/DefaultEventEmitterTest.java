@@ -1,16 +1,16 @@
 package io.herd.monitoring;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 import com.lmax.disruptor.EventHandler;
 
@@ -34,6 +34,7 @@ public class DefaultEventEmitterTest {
         assertTrue(this.emitter.isRunning());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testEmit() {
         final List<Event> eventList = new ArrayList<>();
@@ -47,13 +48,13 @@ public class DefaultEventEmitterTest {
         };
         this.emitter.withEventHandlers(eventHandler);
         this.emitter.start();
-        this.emitter.emit(new Event("event", 123.56, true));
+        Event event = new Event("event").start();
+        this.emitter.emit(event.stopWithFailure());
         assertTrue(waitForCondition((v) -> {
             return eventList.size() != 0;
         }));
-        Event event = eventList.get(0);
+        event = eventList.get(0);
         assertEquals("event", event.getId());
-        assertEquals(123.56, event.getElapsedTime(), 0.0);
         assertTrue(event.isFailure());
     }
     

@@ -1,28 +1,29 @@
 package io.herd.monitoring;
 
+
 public class Event {
 
     private String id;
     private boolean failure;
-    private double elapsedTime;
-
+    private long elapsedTime;
+    private long startTime;
+    
     public Event() {
-
+        
     }
 
-    public Event(String id, double elapsedTime, boolean isFailure) {
+    public Event(String id) {
         this.id = id;
-        this.elapsedTime = elapsedTime;
-        this.failure = isFailure;
     }
 
     public void copyEvent(Event otherEvent) {
         this.id = otherEvent.id;
+        this.startTime = otherEvent.startTime;
         this.elapsedTime = otherEvent.elapsedTime;
         this.failure = otherEvent.failure;
     }
 
-    public double getElapsedTime() {
+    public long getElapsedTime() {
         return elapsedTime;
     }
 
@@ -34,7 +35,7 @@ public class Event {
         return failure;
     }
 
-    public void setElapsedTime(double elapsedTime) {
+    public void setElapsedTime(long elapsedTime) {
         this.elapsedTime = elapsedTime;
     }
 
@@ -44,6 +45,23 @@ public class Event {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Event start() {
+        this.startTime = System.nanoTime();
+        return this;
+    }
+    
+    public Event stop() {
+        this.elapsedTime = System.nanoTime() - this.startTime;
+        this.failure = false;
+        return this;
+    }
+
+    public Event stopWithFailure() {
+        this.elapsedTime = System.nanoTime() - this.startTime;
+        this.failure = true;
+        return this;
     }
 
 }

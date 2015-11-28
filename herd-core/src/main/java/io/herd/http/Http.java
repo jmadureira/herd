@@ -1,36 +1,47 @@
 package io.herd.http;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
 import io.herd.ServerRuntime;
 import io.herd.base.Builder;
+import io.herd.base.routing.Route;
+import io.herd.base.routing.Routes;
 import io.herd.netty.NettyServerRuntime;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
 
 public class Http implements Builder<ServerRuntime> {
+    
+    private static final Logger logger = getLogger(lookup().lookupClass());
+    
+    public static final void logRoute(Route<?, ?> route) {
+        logger.info("{}", route);
+    }
 
     private HttpConfiguration configuration;
     private int port = -1;
-    private Map<String, Handler> resources;
-    private List<String> staticResources;
+    private List<Route<String, ? extends ChannelHandler>> routes;
 
     public Http(HttpConfiguration configuration) {
         this.configuration = configuration;
-        this.staticResources = new ArrayList<>();
-        this.resources = new HashMap<>();
+        this.routes = new ArrayList<>();
     }
 
     @Override
     public ServerRuntime build() {
+        this.routes.stream().forEach(Http::logRoute);
         NettyServerRuntime serverRuntime = new NettyServerRuntime("Http", getHandler());
         if (port > 0) {
             serverRuntime.setPort(port);
@@ -39,18 +50,18 @@ public class Http implements Builder<ServerRuntime> {
         }
         return serverRuntime;
     }
-    
-    public Http listen(int port) {
-        this.port = port;
+
+    public Http get(String path, Handler handler) {
+        this.routes.add(Routes.forString(path, new HttpHandler(handler)));
+        return this;
+    }
+
+    public Http get(String path, String resource) {
+        this.routes.add(Routes.forString(path, new HttpStaticResourceHandler(resource)));
         return this;
     }
 
     public ChannelHandler getHandler() {
-        List<Route> routes = resources
-              .entrySet()
-              .stream()
-              .map((entry) -> new Route(entry.getKey(), entry.getValue()))
-              .collect(Collectors.toList());
         return new ChannelInitializer<Channel>() {
 
             @Override
@@ -61,21 +72,17 @@ public class Http implements Builder<ServerRuntime> {
                 // adding this allows me to deal with FullHttpRequest on the next handler
                 pipeline.addLast(new HttpObjectAggregator(64 * 1024));
                 pipeline.addLast("http Handler", new DispatchingHttpHandler(routes));
-//                pipeline.addLast("websocket handler", new WebSocketServerProtocolHandler("/socket.io"));
-//                pipeline.addLast("text frame handler", new TextWebSocketFrameHandler(new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE)));
+                pipeline.addLast("websocket handler", new WebSocketServerProtocolHandler("/socket.io"));
+                pipeline.addLast("text frame handler", new TextWebSocketFrameHandler(new DefaultChannelGroup(
+                        ImmediateEventExecutor.INSTANCE)));
                 pipeline.addLast("bad request handler", new BadHTTPRequestHandler());
             }
 
         };
     }
 
-    public Http serving(String contextPath, Handler handler) {
-        this.resources.put(contextPath, handler);
-        return this;
-    }
-
-    public Http servingResources(String path) {
-        this.staticResources.add(path);
+    public Http listen(int port) {
+        this.port = port;
         return this;
     }
 

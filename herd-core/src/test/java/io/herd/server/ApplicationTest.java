@@ -1,19 +1,19 @@
 package io.herd.server;
 
+import io.herd.base.Configuration;
+
 import org.junit.Test;
 
 public class ApplicationTest {
+    
+    public static class TestConfiguration extends Configuration {
+        
+    }
 
-    private class TestApplication extends Application {
+    public class TestApplication extends Application<TestConfiguration> {
 
         @Override
-        protected void initialize() {
-        }
-
-        @Override
-        protected void configure() {
-            // TODO Auto-generated method stub
-            
+        protected void initialize(TestConfiguration configuration) {
         }
 
     }

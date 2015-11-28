@@ -1,12 +1,13 @@
 package io.herd.monitoring;
 
-import io.herd.Service;
+import io.herd.base.Service;
 
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.ExceptionHandler;
@@ -39,7 +40,7 @@ public class DefaultEventEmitter implements Emitter<Event>, Service {
         targetEvent.copyEvent(sourceEvent);
     }
 
-    private static final Logger logger = LogManager.getLogger(DefaultEventEmitter.class);
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final ExecutorService executor;
     private final int bufferSize;
