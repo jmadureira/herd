@@ -12,7 +12,7 @@ jdk:
 before_install:
   - wget http://www.eu.apache.org/dist/thrift/${THRIFT_VERSION}/thrift-${THRIFT_VERSION}.tar.gz -O /tmp/thrift.tar.gz
   - tar -xvzf /tmp/thrift.tar.gz
-  - cd thrift-${THRIFT_VERSION} && ./bootstrap.sh && ./configure
+  - cd thrift-${THRIFT_VERSION} && ./configure
 
 notifications:
   email: false
