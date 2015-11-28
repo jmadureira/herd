@@ -1,13 +1,18 @@
 sudo: false
 
+env:
+  global:
+    - THRIFT_VERSION=0.9.3
+
 language: java
 
 jdk:
   - oraclejdk8
 
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y libboost-dev libboost-test-dev libboost-program-options-dev libevent-dev automake libtool flex bison pkg-config g++ libssl-dev
+  - wget http://www.eu.apache.org/dist/thrift/${THRIFT_VERSION}/thrift-${THRIFT_VERSION}.tar.gz -O /tmp/thrift.tar.gz
+  - tar -xvzf /tmp/thrift.tar.gz
+  - cd /tmp/thrift && ./configure && ./configure
 
 notifications:
   email: false
