@@ -1,6 +1,6 @@
 package io.herd.eventbus;
 
-import io.herd.Service;
+import io.herd.base.Service;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
