@@ -33,7 +33,10 @@ public class Gossiper implements Service {
 
     private static final Logger logger = LoggerFactory.getLogger(Gossiper.class);
 
-    // used to randomize the selections of nodes to gossip with
+    /**
+     *  Used to randomize the selections of nodes to gossip with. Doesn't need to be a secure random since it is just to
+     *  allow us to pick random nodes.
+     */
     private final Random random = new Random();
 
     private final Comparator<InetSocketAddress> inetSocketComparator = (o1, o2) -> {
@@ -60,8 +63,16 @@ public class Gossiper implements Service {
     // collection of gossip listeners
     private final List<GossipChangeListener> listeners = new CopyOnWriteArrayList<>();
 
-    private volatile boolean isRunning = false;
+    /**
+     * Flag indicating if the gossiper is running or not
+     */
+    private volatile boolean running = false;
     private final InetSocketAddress localhost;
+    
+    /**
+     * The client we use to communicate with other nodes.
+     */
+    private GossipClient client;
 
     Gossiper(InetSocketAddress localhost) {
         this.localhost = localhost;
@@ -175,7 +186,7 @@ public class Gossiper implements Service {
     }
 
     public boolean isRunning() {
-        return isRunning;
+        return running;
     }
 
     /**
@@ -203,6 +214,7 @@ public class Gossiper implements Service {
     private InetSocketAddress sendGossip(GossipDigestSyn message, Set<InetSocketAddress> nodeList) {
 
         if (nodeList.isEmpty()) {
+            logger.debug("No nodes to gossip with");
             return null;
         }
 
@@ -211,7 +223,7 @@ public class Gossiper implements Service {
         int index = (size == 1) ? 0 : random.nextInt(size);
         InetSocketAddress target = nodes.get(index);
         logger.debug("Gossiping with {}", target);
-        new GossipClient(this).gossip(message, target);
+        this.client.gossip(message, target);
         return target;
     }
 
@@ -237,6 +249,8 @@ public class Gossiper implements Service {
                 logger.info("Gossiper is already running");
                 return;
             }
+            
+            this.client = new GossipClient(this);
             /*
              * our generation number is simply the time the service started since it's more than enough to guarantee
              * that it's different than previous generations
@@ -284,7 +298,7 @@ public class Gossiper implements Service {
                     logger.error("Gossip round failed", e);
                 }
             }, 1000, 1000, TimeUnit.MILLISECONDS);
-            isRunning = true;
+            running = true;
         } catch (Exception e) {
             logger.error("Failed to start gossiper", e);
             throw new ServerRuntimeException(e);
@@ -298,7 +312,8 @@ public class Gossiper implements Service {
                 dispatcherService.shutdown();
                 executor.awaitTermination(3000, TimeUnit.MILLISECONDS);
                 dispatcherService.awaitTermination(3000, TimeUnit.MILLISECONDS);
-                isRunning = false;
+                client.stop();
+                running = false;
             } catch (InterruptedException e) {
                 logger.error("Failed to wait for gossiper to stop.", e);
             }

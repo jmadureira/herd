@@ -24,14 +24,15 @@ public class Gossip implements Builder<ServerRuntime> {
     @Override
     public ServerRuntime build() {
         try {
-            Gossiper gossiper = new Gossiper(new InetSocketAddress(InetAddress.getLocalHost(), configuration.getPort()));
+            int port = configuration.getPort() == 0 ? Interwebs.findFreePort() : configuration.getPort();
+            Gossiper gossiper = new Gossiper(new InetSocketAddress(InetAddress.getLocalHost(), port));
             configuration.getSeedNodes()
                     .stream()
                     .map(Interwebs::toSocketAddress)
                     .filter(this::isNotLocalInstance)
                     .forEach(gossiper::addSeedNode);
 
-            return new GossipServer(configuration.getServiceName(), configuration.getPort(), gossiper);
+            return new GossipServer(configuration.getServiceName(), port, gossiper);
         } catch (UnknownHostException e) {
             throw new ServerRuntimeException(e);
         }
