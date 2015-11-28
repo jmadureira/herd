@@ -7,7 +7,7 @@ import com.google.common.base.Objects;
 @JsonTypeName("default")
 public class DefaultThriftConfiguration implements ThriftConfiguration {
 
-    private int port;
+    private int port = 9090;
 
     @JsonProperty
     public void setPort(int port) {

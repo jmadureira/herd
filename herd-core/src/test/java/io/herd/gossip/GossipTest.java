@@ -48,41 +48,6 @@ public class GossipTest implements GossipTestable {
     }
     
     @Test
-    public void testNewNodeGossipingForTheFirstTime() throws Exception {
-
-        int generation = (int) (System.currentTimeMillis() / 1000);
-        long maxVersion = System.currentTimeMillis();
-        Map<ApplicationState, VersionedValue> states = new HashMap<>();
-//        addApplicationState(states, ApplicationState.SERVICE_NAME, "someService", maxVersion);
-        Gossiper gossiper = new Gossiper(localhost);
-
-        gossiper.liveNodes.add(nodeAddress);
-        gossiper.endpointStateMap.put(nodeAddress, createEndpointState(generation, states));
-
-        GossipClient client = new GossipClient(gossiper);
-
-        // first send our current state with the new node
-        List<GossipDigest> digests = new ArrayList<>();
-        digests.add(new GossipDigest(nodeAddress, generation, maxVersion));
-        GossipDigestSyn message = new GossipDigestSyn(digests);
-
-        client.gossip(message, new InetSocketAddress(InetAddress.getLocalHost(), this.localhost.getPort()));
-
-        // then downgrade our state
-        // the gossip round should restore our state
-        gossiper.endpointStateMap.remove(nodeAddress);
-        assertFalse(gossiper.endpointStateMap.containsKey(nodeAddress));
-
-        digests = new ArrayList<>();
-        digests.add(new GossipDigest(nodeAddress, generation, 0));
-        message = new GossipDigestSyn(digests);
-
-        client.gossip(message, new InetSocketAddress(InetAddress.getLocalHost(), this.localhost.getPort()));
-
-        assertTrue(gossiper.endpointStateMap.containsKey(nodeAddress));
-    }
-
-    @Test
     public void testRandomGossipRoundService() throws Exception {
 
         int generation = (int) (System.currentTimeMillis() / 1000);
