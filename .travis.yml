@@ -16,18 +16,10 @@ addons:
       - libboost-test-dev
       - libboost-program-options-dev
       - libevent-dev
-      - automake
-      - libtool
-      - flex
-      - bison
-      - pkg-config
-      - g++
       - libssl-dev
 
 before_install:
-  - wget http://www.us.apache.org/dist/thrift/${THRIFT_VERSION}/thrift-${THRIFT_VERSION}.tar.gz
-  - tar xfz thrift-${THRIFT_VERSION}.tar.gz
-  - cd thrift-${THRIFT_VERSION} && ./configure --without-ruby --without-erlang --without-go --without-nodejs && make install && cd ..
+  - bash scripts/install-thrift.sh
 
 notifications:
   email: false
